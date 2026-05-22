@@ -107,12 +107,12 @@ function AnalyzerPage() {
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
-              <Ring label="Performance" icon={Gauge} value={s?.performance ?? 0} running={running} />
-              <Ring label="SEO" icon={Search} value={s?.seo ?? 0} running={running} />
-              <Ring label="Mobile" icon={Smartphone} value={s?.mobile ?? 0} running={running} />
-              <Ring label="UX" icon={MousePointer2} value={s?.ux ?? 0} running={running} />
-              <Ring label="Conversion" icon={TrendingUp} value={s?.conversion ?? 0} running={running} />
-              <Ring label="Accessibility" icon={Accessibility} value={s?.accessibility ?? 0} running={running} />
+              <ScoreRing label="Performance" icon={Gauge} value={s?.performance ?? 0} running={running} />
+              <ScoreRing label="SEO" icon={Search} value={s?.seo ?? 0} running={running} />
+              <ScoreRing label="Mobile" icon={Smartphone} value={s?.mobile ?? 0} running={running} />
+              <ScoreRing label="UX" icon={MousePointer2} value={s?.ux ?? 0} running={running} />
+              <ScoreRing label="Conversion" icon={TrendingUp} value={s?.conversion ?? 0} running={running} />
+              <ScoreRing label="Accessibility" icon={Accessibility} value={s?.accessibility ?? 0} running={running} />
             </div>
 
             <AnimatePresence>
@@ -210,7 +210,7 @@ function AnalyzerPage() {
   );
 }
 
-function Ring({ label, value, running, icon: Icon }: { label: string; value: number; running: boolean; icon: any }) {
+function ScoreRing({ label, value, running, icon: Icon }: { label: string; value: number; running: boolean; icon: any }) {
   const color = value === 0 ? "#475569" : value >= 80 ? "#14F195" : value >= 60 ? "#00D4FF" : value >= 40 ? "#7B61FF" : "#EF4444";
   const C = 2 * Math.PI * 36;
   return (
