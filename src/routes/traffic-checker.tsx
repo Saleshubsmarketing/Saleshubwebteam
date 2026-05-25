@@ -6,6 +6,9 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { semrushDomainSnapshot } from "@/lib/semrush.functions";
 
 export const Route = createFileRoute("/traffic-checker")({
   head: () => ({
@@ -139,17 +142,40 @@ function TrafficPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
+  const [live, setLive] = useState(false);
+  const fetchSnapshot = useServerFn(semrushDomainSnapshot);
 
-  const submit = (e?: React.FormEvent) => {
+  const submit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const d = cleanDomain(input);
     if (!d || !d.includes(".")) return;
     setLoading(true);
     setReport(null);
-    setTimeout(() => {
-      setReport(buildReport(d));
+    setLive(false);
+
+    const base = buildReport(d);
+    try {
+      const snap = await fetchSnapshot({ data: { domain: d, database: "us" } });
+      if (snap.ok) {
+        setReport({
+          ...base,
+          visits: snap.organicTraffic || base.visits,
+          keywords: snap.organicKeywords || base.keywords,
+          backlinks: snap.backlinks || base.backlinks,
+          refDomains: snap.refDomains || base.refDomains,
+          authority: snap.authority || base.authority,
+        });
+        setLive(true);
+      } else {
+        toast.error(snap.error);
+        setReport(base);
+      }
+    } catch (err: any) {
+      toast.error("Live data unavailable — showing estimate.");
+      setReport(base);
+    } finally {
       setLoading(false);
-    }, 900);
+    }
   };
 
   return (
@@ -185,7 +211,7 @@ function TrafficPage() {
         </form>
 
         <p className="text-xs text-muted-foreground mt-3 text-center">
-          Demo estimator — connect Semrush for live data on your subscription.
+          {live ? "Live Semrush data on your subscription." : "Estimates blended with live Semrush data when available."}
         </p>
 
         <AnimatePresence mode="wait">
