@@ -5,89 +5,19 @@ const InputSchema = z.object({
   url: z.string().trim().min(4).max(2048),
 });
 
-const auditTool = {
-  type: "function" as const,
-  function: {
-    name: "return_audit",
-    description: "Return a structured website audit",
-    parameters: {
-      type: "object",
-      properties: {
-        summary: { type: "string", description: "2-3 sentence executive summary" },
-        scores: {
-          type: "object",
-          properties: {
-            performance: { type: "integer", minimum: 0, maximum: 100 },
-            seo: { type: "integer", minimum: 0, maximum: 100 },
-            mobile: { type: "integer", minimum: 0, maximum: 100 },
-            ux: { type: "integer", minimum: 0, maximum: 100 },
-            conversion: { type: "integer", minimum: 0, maximum: 100 },
-            accessibility: { type: "integer", minimum: 0, maximum: 100 },
-          },
-          required: ["performance", "seo", "mobile", "ux", "conversion", "accessibility"],
-          additionalProperties: false,
-        },
-        categories: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              name: {
-                type: "string",
-                enum: ["Performance", "SEO", "Mobile", "UX", "Conversion", "Accessibility", "Broken Links"],
-              },
-              findings: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    severity: { type: "string", enum: ["critical", "warning", "info"] },
-                    title: { type: "string" },
-                    detail: { type: "string" },
-                    impact: { type: "string", description: "Projected business impact" },
-                  },
-                  required: ["severity", "title", "detail", "impact"],
-                  additionalProperties: false,
-                },
-              },
-            },
-            required: ["name", "findings"],
-            additionalProperties: false,
-          },
-        },
-        recommendations: {
-          type: "array",
-          description: "Top 5-8 prioritized fixes ordered by leverage",
-          items: {
-            type: "object",
-            properties: {
-              priority: { type: "string", enum: ["high", "medium", "low"] },
-              title: { type: "string" },
-              detail: { type: "string" },
-              effort: { type: "string", enum: ["low", "medium", "high"] },
-            },
-            required: ["priority", "title", "detail", "effort"],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ["summary", "scores", "categories", "recommendations"],
-      additionalProperties: false,
-    },
-  },
-};
-
-function normalizeUrl(input: string) {
+function normalizeUrl(input: string): string | null {
   let u = input.trim();
   if (!/^https?:\/\//i.test(u)) u = "https://" + u;
   try {
-    return new URL(u).toString();
+    const parsed = new URL(u);
+    if (!parsed.hostname.includes(".")) return null;
+    return parsed.toString();
   } catch {
     return null;
   }
 }
 
-/* -------- Real signal collection -------- */
+/* -------- Real page probe (URL validation, SSL, reachability) -------- */
 
 type FetchProbe = {
   ok: boolean;
@@ -99,10 +29,11 @@ type FetchProbe = {
   contentType: string;
   headers: Record<string, string>;
   html: string;
+  sslError?: boolean;
   error?: string;
 };
 
-async function probeUrl(url: string, timeoutMs = 12000): Promise<FetchProbe> {
+async function probeUrl(url: string, timeoutMs = 15000): Promise<FetchProbe> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const t0 = Date.now();
@@ -132,9 +63,12 @@ async function probeUrl(url: string, timeoutMs = 12000): Promise<FetchProbe> {
       bytes: new TextEncoder().encode(text).length,
       contentType: res.headers.get("content-type") ?? "",
       headers,
-      html: text.slice(0, 250_000),
+      html: text.slice(0, 300_000),
     };
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const name = e instanceof Error ? e.name : "";
+    const sslError = /certificate|ssl|tls|self.signed|cert_/i.test(msg);
     return {
       ok: false,
       status: 0,
@@ -145,12 +79,15 @@ async function probeUrl(url: string, timeoutMs = 12000): Promise<FetchProbe> {
       contentType: "",
       headers: {},
       html: "",
-      error: e?.name === "AbortError" ? "timeout" : String(e?.message ?? e),
+      sslError,
+      error: name === "AbortError" ? "timeout" : msg,
     };
   } finally {
     clearTimeout(timer);
   }
 }
+
+/* -------- On-page SEO signal extraction (real DOM-level checks) -------- */
 
 function pick(re: RegExp, html: string): string | null {
   const m = html.match(re);
@@ -163,294 +100,412 @@ function pickAll(re: RegExp, html: string): string[] {
   return out;
 }
 
-function extractSignals(probe: FetchProbe, baseUrl: string) {
-  const html = probe.html;
-  const lower = html.toLowerCase();
+function extractSeoSignals(html: string, baseUrl: string) {
   const title = pick(/<title[^>]*>([\s\S]*?)<\/title>/i, html);
   const metaDesc = pick(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i, html);
-  const ogTitle = pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i, html);
-  const ogImage = pick(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']/i, html);
   const viewport = pick(/<meta[^>]+name=["']viewport["'][^>]+content=["']([^"']*)["']/i, html);
   const canonical = pick(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']*)["']/i, html);
   const robotsMeta = pick(/<meta[^>]+name=["']robots["'][^>]+content=["']([^"']*)["']/i, html);
   const lang = pick(/<html[^>]+lang=["']([^"']+)["']/i, html);
-  const h1s = pickAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, html).map((s) => s.replace(/<[^>]+>/g, "").trim()).filter(Boolean);
+  const ogTitle = pick(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']*)["']/i, html);
+  const ogImage = pick(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']*)["']/i, html);
+  const twitterCard = pick(/<meta[^>]+name=["']twitter:card["'][^>]+content=["']([^"']*)["']/i, html);
+  const h1s = pickAll(/<h1[^>]*>([\s\S]*?)<\/h1>/gi, html)
+    .map((s) => s.replace(/<[^>]+>/g, "").trim())
+    .filter(Boolean);
   const h2Count = (html.match(/<h2[\s>]/gi) || []).length;
-  const imgs = pickAll(/<img\b[^>]*>/gi, html.replace(/<img/gi, "<img\u0001")).length || (html.match(/<img\b/gi) || []).length;
+  const imgs = (html.match(/<img\b/gi) || []).length;
   const imgsMissingAlt = (html.match(/<img\b(?![^>]*\balt=)[^>]*>/gi) || []).length;
-  const scripts = (html.match(/<script\b/gi) || []).length;
-  const stylesheets = (html.match(/<link\b[^>]+rel=["']stylesheet["'][^>]*>/gi) || []).length;
-  const inlineStyles = (html.match(/<style\b/gi) || []).length;
-  const hasViewport = !!viewport;
   const hasJsonLd = /application\/ld\+json/i.test(html);
-  const hasOg = !!(ogTitle || ogImage);
-  const isShopify = /cdn\.shopify\.com|shopify\.com|x-shopid|shopify_stats/i.test(lower) || /\bshopify\b/i.test(probe.headers["server"] ?? "");
-  const hasGTM = /googletagmanager\.com\/gtm\.js|gtag\(/i.test(html);
-  const hasMetaPixel = /connect\.facebook\.net|fbq\(/i.test(html);
-  const hasKlaviyo = /klaviyo\.com|_learnq/i.test(html);
-
-  // Collect internal links for broken-link sampling
   const anchors = pickAll(/<a\b[^>]+href=["']([^"'#]+)["'][^>]*>/gi, html);
-  const base = new URL(baseUrl);
-  const internal = Array.from(
-    new Set(
-      anchors
-        .map((href) => {
-          try {
-            const u = new URL(href, base);
-            return u.host === base.host ? u.toString().split("#")[0] : null;
-          } catch {
-            return null;
-          }
-        })
-        .filter((u): u is string => !!u && u !== probe.finalUrl),
-    ),
-  ).slice(0, 8);
-
+  let internal: string[] = [];
+  try {
+    const base = new URL(baseUrl);
+    internal = Array.from(
+      new Set(
+        anchors
+          .map((href) => {
+            try {
+              const u = new URL(href, base);
+              return u.host === base.host ? u.toString().split("#")[0] : null;
+            } catch {
+              return null;
+            }
+          })
+          .filter((u): u is string => !!u),
+      ),
+    ).slice(0, 10);
+  } catch {
+    /* noop */
+  }
   return {
     title,
     titleLen: title?.length ?? 0,
     metaDesc,
     metaDescLen: metaDesc?.length ?? 0,
-    ogTitle,
-    ogImage,
     viewport,
     canonical,
     robotsMeta,
     lang,
+    ogTitle,
+    ogImage,
+    twitterCard,
     h1Count: h1s.length,
     h1Sample: h1s.slice(0, 3),
     h2Count,
     imgs,
     imgsMissingAlt,
-    scripts,
-    stylesheets,
-    inlineStyles,
-    hasViewport,
     hasJsonLd,
-    hasOg,
-    isShopify,
-    hasGTM,
-    hasMetaPixel,
-    hasKlaviyo,
     internalLinks: internal,
   };
 }
 
-async function checkLinks(urls: string[]): Promise<{ url: string; status: number; ok: boolean }[]> {
-  const results = await Promise.all(
-    urls.map(async (u) => {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 6000);
-      try {
-        const r = await fetch(u, { method: "HEAD", redirect: "follow", signal: ctrl.signal });
-        if (r.status === 405 || r.status === 403) {
-          // some servers block HEAD; retry GET
-          const r2 = await fetch(u, { method: "GET", redirect: "follow", signal: ctrl.signal });
-          return { url: u, status: r2.status, ok: r2.ok };
-        }
-        return { url: u, status: r.status, ok: r.ok };
-      } catch (e: any) {
-        return { url: u, status: 0, ok: false };
-      } finally {
-        clearTimeout(t);
-      }
-    }),
-  );
-  return results;
+async function checkUrlStatus(url: string, timeoutMs = 6000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    let r = await fetch(url, { method: "HEAD", redirect: "follow", signal: ctrl.signal });
+    if (r.status === 405 || r.status === 403) {
+      r = await fetch(url, { method: "GET", redirect: "follow", signal: ctrl.signal });
+    }
+    return { url, status: r.status, ok: r.ok };
+  } catch {
+    return { url, status: 0, ok: false };
+  } finally {
+    clearTimeout(t);
+  }
 }
+
+/* -------- Google PageSpeed Insights (real Lighthouse) -------- */
+
+type PsiStrategy = "mobile" | "desktop";
+type PsiAudit = {
+  id: string;
+  title: string;
+  description?: string;
+  score: number | null;
+  displayValue?: string;
+};
+type PsiResult = {
+  strategy: PsiStrategy;
+  scores: {
+    performance: number;
+    accessibility: number;
+    bestPractices: number;
+    seo: number;
+  };
+  metrics: {
+    fcp: string | null;
+    lcp: string | null;
+    cls: string | null;
+    tbt: string | null;
+    si: string | null;
+    tti: string | null;
+  };
+  opportunities: PsiAudit[];
+  diagnostics: PsiAudit[];
+  failedAccessibility: PsiAudit[];
+  failedSeo: PsiAudit[];
+  failedBestPractices: PsiAudit[];
+};
+
+async function runPsi(url: string, strategy: PsiStrategy): Promise<PsiResult | { error: string }> {
+  const key = process.env.PAGESPEED_API_KEY;
+  const params = new URLSearchParams({
+    url,
+    strategy,
+    category: "performance",
+  });
+  // PSI supports repeated `category` params
+  const extraCats = ["accessibility", "best-practices", "seo"];
+  let qs = params.toString();
+  for (const c of extraCats) qs += `&category=${encodeURIComponent(c)}`;
+  if (key) qs += `&key=${encodeURIComponent(key)}`;
+
+  const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${qs}`;
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 90_000);
+  try {
+    const res = await fetch(endpoint, { signal: ctrl.signal });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { error: `PageSpeed API ${res.status}: ${body.slice(0, 200)}` };
+    }
+    const data = (await res.json()) as any;
+    const lh = data?.lighthouseResult;
+    if (!lh) return { error: "PageSpeed returned no Lighthouse result." };
+    const cats = lh.categories ?? {};
+    const audits = lh.audits ?? {};
+    const pct = (s: any) =>
+      typeof s?.score === "number" ? Math.round(s.score * 100) : 0;
+    const toAudit = (id: string): PsiAudit | null => {
+      const a = audits[id];
+      if (!a) return null;
+      return {
+        id,
+        title: a.title,
+        description: a.description,
+        score: typeof a.score === "number" ? a.score : null,
+        displayValue: a.displayValue,
+      };
+    };
+    const refs = (catKey: string) => (cats[catKey]?.auditRefs ?? []) as Array<{ id: string; group?: string }>;
+    const perfRefs = refs("performance");
+    const opportunities = perfRefs
+      .filter((r) => r.group === "load-opportunities")
+      .map((r) => toAudit(r.id))
+      .filter((a): a is PsiAudit => !!a && a.score !== null && a.score < 0.9)
+      .sort((a, b) => (a.score ?? 0) - (b.score ?? 0))
+      .slice(0, 8);
+    const diagnostics = perfRefs
+      .filter((r) => r.group === "diagnostics")
+      .map((r) => toAudit(r.id))
+      .filter((a): a is PsiAudit => !!a && a.score !== null && a.score < 0.9)
+      .slice(0, 6);
+    const failedFrom = (catKey: string) =>
+      refs(catKey)
+        .map((r) => toAudit(r.id))
+        .filter((a): a is PsiAudit => !!a && a.score !== null && a.score < 0.9)
+        .slice(0, 8);
+
+    return {
+      strategy,
+      scores: {
+        performance: pct(cats.performance),
+        accessibility: pct(cats.accessibility),
+        bestPractices: pct(cats["best-practices"]),
+        seo: pct(cats.seo),
+      },
+      metrics: {
+        fcp: audits["first-contentful-paint"]?.displayValue ?? null,
+        lcp: audits["largest-contentful-paint"]?.displayValue ?? null,
+        cls: audits["cumulative-layout-shift"]?.displayValue ?? null,
+        tbt: audits["total-blocking-time"]?.displayValue ?? null,
+        si: audits["speed-index"]?.displayValue ?? null,
+        tti: audits["interactive"]?.displayValue ?? null,
+      },
+      opportunities,
+      diagnostics,
+      failedAccessibility: failedFrom("accessibility"),
+      failedSeo: failedFrom("seo"),
+      failedBestPractices: failedFrom("best-practices"),
+    };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: /AbortError/i.test(msg) ? "PageSpeed timed out (90s)." : msg };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* -------- Build findings & recommendations from REAL data -------- */
+
+type Severity = "critical" | "warning" | "info";
+type Finding = { severity: Severity; title: string; detail: string; impact: string };
+type Category = { name: string; findings: Finding[] };
+type Recommendation = {
+  priority: "high" | "medium" | "low";
+  title: string;
+  detail: string;
+  effort: "low" | "medium" | "high";
+};
+
+function sevFromScore(score: number): Severity {
+  if (score < 50) return "critical";
+  if (score < 90) return "warning";
+  return "info";
+}
+
+function buildSeoFindings(seo: ReturnType<typeof extractSeoSignals>, robots: { ok: boolean; status: number }, sitemap: { ok: boolean; status: number }): Finding[] {
+  const out: Finding[] = [];
+  if (!seo.title) {
+    out.push({ severity: "critical", title: "Missing <title> tag", detail: "The page has no <title> element.", impact: "Search engines have no headline to show in results — major ranking and CTR loss." });
+  } else if (seo.titleLen < 20 || seo.titleLen > 65) {
+    out.push({ severity: "warning", title: `Title length is ${seo.titleLen} chars`, detail: `"${seo.title}". Optimal is 30–60 characters.`, impact: "Title may be truncated or look thin in SERPs." });
+  } else {
+    out.push({ severity: "info", title: "Title tag present", detail: `"${seo.title}" (${seo.titleLen} chars).`, impact: "Good — within optimal length." });
+  }
+  if (!seo.metaDesc) {
+    out.push({ severity: "critical", title: "Missing meta description", detail: "No <meta name=\"description\"> found.", impact: "Google will auto-generate a snippet — lower CTR." });
+  } else if (seo.metaDescLen < 70 || seo.metaDescLen > 165) {
+    out.push({ severity: "warning", title: `Meta description is ${seo.metaDescLen} chars`, detail: "Optimal is 120–160 characters.", impact: "Snippet may be truncated or under-utilized." });
+  }
+  if (seo.h1Count === 0) out.push({ severity: "critical", title: "No <h1> on the page", detail: "Every page should have exactly one H1.", impact: "Hurts topical clarity for search engines and screen readers." });
+  else if (seo.h1Count > 1) out.push({ severity: "warning", title: `${seo.h1Count} <h1> tags found`, detail: "Multiple H1s dilute the page's main topic.", impact: "Reduces SEO clarity." });
+  if (!seo.canonical) out.push({ severity: "warning", title: "No canonical tag", detail: "No <link rel=\"canonical\"> declared.", impact: "Risk of duplicate-content issues across URL variants." });
+  if (!seo.viewport) out.push({ severity: "critical", title: "Missing viewport meta", detail: "No <meta name=\"viewport\"> tag.", impact: "Page will not render correctly on mobile devices." });
+  if (!seo.lang) out.push({ severity: "warning", title: "No <html lang> attribute", detail: "Language is not declared on the root <html> element.", impact: "Hurts accessibility and international SEO." });
+  if (!seo.hasJsonLd) out.push({ severity: "info", title: "No JSON-LD structured data", detail: "No schema.org markup detected.", impact: "Missing rich-result eligibility." });
+  if (!seo.ogTitle && !seo.ogImage) out.push({ severity: "warning", title: "No Open Graph tags", detail: "Shared links won't render a rich preview.", impact: "Lower social-share CTR." });
+  if (!seo.twitterCard) out.push({ severity: "info", title: "No Twitter Card meta", detail: "Missing <meta name=\"twitter:card\">.", impact: "Default Twitter previews instead of rich cards." });
+  if (!robots.ok) out.push({ severity: "warning", title: `robots.txt returned HTTP ${robots.status || "error"}`, detail: "Search engine crawlers expect /robots.txt.", impact: "Crawl directives are missing or unreachable." });
+  else out.push({ severity: "info", title: "robots.txt found", detail: "Reachable at /robots.txt.", impact: "Crawlers can read your directives." });
+  if (!sitemap.ok) out.push({ severity: "warning", title: `sitemap.xml returned HTTP ${sitemap.status || "error"}`, detail: "No sitemap detected at /sitemap.xml.", impact: "Slower discovery of new pages by search engines." });
+  return out;
+}
+
+function buildPerfFindings(psi: PsiResult, probeMs: number, bytes: number): Finding[] {
+  const out: Finding[] = [];
+  out.push({
+    severity: sevFromScore(psi.scores.performance),
+    title: `Lighthouse performance score: ${psi.scores.performance}/100`,
+    detail: `LCP ${psi.metrics.lcp ?? "?"} · CLS ${psi.metrics.cls ?? "?"} · TBT ${psi.metrics.tbt ?? "?"} · FCP ${psi.metrics.fcp ?? "?"} · SI ${psi.metrics.si ?? "?"}`,
+    impact: psi.scores.performance < 50 ? "Critical: poor Core Web Vitals reduce SEO rankings and conversion." : "Faster pages convert better and rank higher.",
+  });
+  out.push({
+    severity: probeMs > 2000 ? "warning" : "info",
+    title: `Server TTFB sample: ${probeMs} ms`,
+    detail: `Total response measured at ${probeMs} ms · ${Math.round(bytes / 1024)} KB transferred.`,
+    impact: probeMs > 2000 ? "Slow server response delays everything downstream." : "Server response is healthy.",
+  });
+  for (const o of psi.opportunities.slice(0, 4)) {
+    out.push({
+      severity: (o.score ?? 1) < 0.5 ? "critical" : "warning",
+      title: o.title,
+      detail: (o.displayValue ? `${o.displayValue} · ` : "") + (o.description?.replace(/\[.*?\]\(.*?\)/g, "").slice(0, 220) ?? ""),
+      impact: "Reduces load time when fixed.",
+    });
+  }
+  return out;
+}
+
+function buildBrokenLinkFindings(checks: { url: string; status: number; ok: boolean }[]): Finding[] {
+  const broken = checks.filter((c) => !c.ok);
+  if (broken.length === 0)
+    return [{ severity: "info", title: "No broken links in sample", detail: `Checked ${checks.length} internal links — all OK.`, impact: "Healthy link graph." }];
+  return broken.slice(0, 6).map((b) => ({
+    severity: "critical" as const,
+    title: `Broken link: HTTP ${b.status || "unreachable"}`,
+    detail: b.url,
+    impact: "Hurts UX, SEO crawl budget, and conversion.",
+  }));
+}
+
+function buildRecommendations(
+  psi: PsiResult,
+  seo: ReturnType<typeof extractSeoSignals>,
+  broken: number,
+): Recommendation[] {
+  const recs: Recommendation[] = [];
+  if (!seo.title || seo.titleLen < 20 || seo.titleLen > 65)
+    recs.push({ priority: "high", title: "Fix the <title> tag", detail: "Write a unique 30–60 char title with the primary keyword near the front.", effort: "low" });
+  if (!seo.metaDesc)
+    recs.push({ priority: "high", title: "Add a meta description", detail: "Write a compelling 120–160 char description that drives clicks from search.", effort: "low" });
+  if (!seo.viewport)
+    recs.push({ priority: "high", title: "Add a viewport meta tag", detail: "Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> for mobile.", effort: "low" });
+  if (seo.h1Count !== 1)
+    recs.push({ priority: "medium", title: "Use exactly one H1", detail: `Page currently has ${seo.h1Count} H1 tags. Pick the single most important headline.`, effort: "low" });
+  if (!seo.canonical)
+    recs.push({ priority: "medium", title: "Add a canonical tag", detail: "Prevent duplicate-content penalties across URL variants.", effort: "low" });
+  if (broken > 0)
+    recs.push({ priority: "high", title: `Fix ${broken} broken internal link${broken === 1 ? "" : "s"}`, detail: "Repair or remove dead links to recover lost authority and trust.", effort: "low" });
+  for (const o of psi.opportunities.slice(0, 4)) {
+    recs.push({
+      priority: (o.score ?? 1) < 0.5 ? "high" : "medium",
+      title: o.title,
+      detail: (o.displayValue ? `${o.displayValue}. ` : "") + "From Google Lighthouse opportunities.",
+      effort: "medium",
+    });
+  }
+  if (psi.scores.accessibility < 90)
+    recs.push({ priority: psi.scores.accessibility < 60 ? "high" : "medium", title: `Improve accessibility (${psi.scores.accessibility}/100)`, detail: "Address Lighthouse accessibility failures — alt text, color contrast, ARIA, labels.", effort: "medium" });
+  if (!seo.hasJsonLd)
+    recs.push({ priority: "low", title: "Add structured data (JSON-LD)", detail: "Mark up Product, Organization, BreadcrumbList for rich results.", effort: "medium" });
+  return recs.slice(0, 10);
+}
+
+/* -------- Public server function -------- */
+
 export const analyzeWebsite = createServerFn({ method: "POST" })
   .inputValidator((d) => InputSchema.parse(d))
   .handler(async ({ data }) => {
     const url = normalizeUrl(data.url);
-    if (!url) {
-      return { ok: false as const, error: "Please enter a valid URL." };
-    }
+    if (!url) return { ok: false as const, error: "Invalid website URL." };
 
-    const LOVABLE_API_KEY = process.env.LOVABLE_API_KEY;
-    if (!LOVABLE_API_KEY) {
-      return { ok: false as const, error: "AI gateway is not configured." };
-    }
-
-    /* 1. Fetch the page. Detect dead domains, DNS errors, 4xx/5xx. */
+    // 1. Validate reachability + SSL + content type
     const probe = await probeUrl(url);
-    if (probe.error === "timeout") {
-      return { ok: false as const, error: `Could not reach ${url} — request timed out after 12s. The site appears to be down or blocking requests.` };
-    }
-    if (probe.status === 0) {
-      return { ok: false as const, error: `Could not reach ${url}. The domain is unreachable (DNS error or network failure): ${probe.error ?? "unknown"}.` };
-    }
-    if (probe.status >= 400) {
-      return { ok: false as const, error: `${url} returned HTTP ${probe.status}. The page is not serving content — cannot audit.` };
-    }
-    if (!/text\/html/i.test(probe.contentType)) {
+    if (probe.sslError)
+      return { ok: false as const, error: `SSL certificate issue on ${url} — ${probe.error}` };
+    if (probe.error === "timeout")
+      return { ok: false as const, error: `Website timeout detected — ${url} did not respond within 15s.` };
+    if (probe.status === 0)
+      return { ok: false as const, error: `Website unreachable — DNS or network error for ${url}: ${probe.error ?? "unknown"}.` };
+    if (probe.status >= 400)
+      return { ok: false as const, error: `${url} returned HTTP ${probe.status} — page not serving content.` };
+    if (!/text\/html/i.test(probe.contentType))
       return { ok: false as const, error: `${url} returned ${probe.contentType || "non-HTML content"} — only HTML pages can be audited.` };
-    }
-    if (probe.html.length < 200) {
-      return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes). The page may require JavaScript or is misconfigured.` };
-    }
+    if (probe.html.length < 200)
+      return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes).` };
 
-    /* 1b. Detect parked / placeholder / soft-404 pages that return HTTP 200 but contain no real content. */
-    const htmlLower = probe.html.toLowerCase();
-    const textOnly = probe.html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-    const wordCount = textOnly ? textOnly.split(" ").length : 0;
+    // 2. Real on-page SEO signals
+    const seo = extractSeoSignals(probe.html, probe.finalUrl);
 
-    const parkedSignals = [
-      "domain is for sale",
-      "buy this domain",
-      "this domain is for sale",
-      "domain for sale",
-      "parked free",
-      "parked by",
-      "godaddy.com/domains",
-      "sedoparking",
-      "hugedomains",
-      "dan.com",
-      "afternic",
-      "namecheap parking",
-      "future home of",
-      "default web site page",
-      "apache2 ubuntu default page",
-      "welcome to nginx",
-      "it works!",
-      "index of /",
-    ];
-    const softErrorSignals = [
-      "404 not found",
-      "page not found",
-      "site not found",
-      "this site can",
-      "no such host",
-      "under construction",
-      "coming soon",
-      "account suspended",
-      "site temporarily unavailable",
-      "service unavailable",
-      "bad gateway",
-    ];
+    // 3. Real Lighthouse audit via Google PageSpeed Insights + robots/sitemap + broken-link sample (parallel)
+    const origin = new URL(probe.finalUrl).origin;
+    const [psiMobile, psiDesktop, robots, sitemap, linkChecks] = await Promise.all([
+      runPsi(probe.finalUrl, "mobile"),
+      runPsi(probe.finalUrl, "desktop"),
+      checkUrlStatus(`${origin}/robots.txt`),
+      checkUrlStatus(`${origin}/sitemap.xml`),
+      seo.internalLinks.length ? Promise.all(seo.internalLinks.slice(0, 6).map((u) => checkUrlStatus(u))) : Promise.resolve([]),
+    ]);
 
-    const matchedParked = parkedSignals.find((s) => htmlLower.includes(s));
-    if (matchedParked) {
-      return {
-        ok: false as const,
-        error: `${probe.finalUrl} appears to be a parked or placeholder domain (matched: "${matchedParked}"). There is no real site to audit.`,
-      };
-    }
+    if ("error" in psiMobile)
+      return { ok: false as const, error: `Google PageSpeed Insights failed: ${psiMobile.error}` };
 
-    const matchedSoftError = softErrorSignals.find((s) => htmlLower.includes(s));
-    // Only treat as soft-404 if the page is also thin (parked/error pages are usually tiny).
-    if (matchedSoftError && wordCount < 80) {
-      return {
-        ok: false as const,
-        error: `${probe.finalUrl} looks like an error or placeholder page (matched: "${matchedSoftError}", only ${wordCount} words of content). Nothing real to audit.`,
-      };
-    }
+    const desktop = "error" in psiDesktop ? null : psiDesktop;
+    const brokenCount = linkChecks.filter((l) => !l.ok).length;
 
-    if (wordCount < 40) {
-      return {
-        ok: false as const,
-        error: `${probe.finalUrl} returned only ${wordCount} words of visible content. The page is empty, JS-rendered without SSR, or misconfigured — cannot run a meaningful audit.`,
-      };
-    }
-
-    /* 2. Extract real on-page signals. */
-    const signals = extractSignals(probe, probe.finalUrl);
-
-    /* 3. Sample internal links for broken-link detection. */
-    const linkChecks = signals.internalLinks.length
-      ? await checkLinks(signals.internalLinks)
-      : [];
-    const brokenLinks = linkChecks.filter((l) => !l.ok);
-
-    /* 4. Build a grounded fact sheet for the AI. */
-    const facts = {
-      url: probe.finalUrl,
-      httpStatus: probe.status,
-      ttfbMs: probe.ttfbMs,
-      totalLoadMs: probe.totalMs,
-      pageBytes: probe.bytes,
-      visibleWordCount: wordCount,
-      contentType: probe.contentType,
-      server: probe.headers["server"] ?? null,
-      hsts: !!probe.headers["strict-transport-security"],
-      xFrameOptions: probe.headers["x-frame-options"] ?? null,
-      contentSecurityPolicy: !!probe.headers["content-security-policy"],
-      cacheControl: probe.headers["cache-control"] ?? null,
-      compression: probe.headers["content-encoding"] ?? null,
-      ...signals,
-      sampledLinks: linkChecks,
-      brokenLinkCount: brokenLinks.length,
+    // 4. Build the dashboard from REAL data only
+    const audit = {
+      summary: `Lighthouse: Performance ${psiMobile.scores.performance}/100 · SEO ${psiMobile.scores.seo}/100 · Accessibility ${psiMobile.scores.accessibility}/100 · Best Practices ${psiMobile.scores.bestPractices}/100 (mobile). LCP ${psiMobile.metrics.lcp ?? "?"}, CLS ${psiMobile.metrics.cls ?? "?"}, TBT ${psiMobile.metrics.tbt ?? "?"}. ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} in sample of ${linkChecks.length}.`,
+      scores: {
+        performance: psiMobile.scores.performance,
+        seo: psiMobile.scores.seo,
+        mobile: psiMobile.scores.performance, // mobile-strategy Lighthouse score
+        ux: Math.round((psiMobile.scores.performance + psiMobile.scores.accessibility) / 2),
+        conversion: Math.max(0, Math.min(100, psiMobile.scores.performance - brokenCount * 5 - (seo.metaDesc ? 0 : 10) - (seo.h1Count === 1 ? 0 : 8))),
+        accessibility: psiMobile.scores.accessibility,
+      },
+      categories: [
+        { name: "Performance" as const, findings: buildPerfFindings(psiMobile, probe.totalMs, probe.bytes) },
+        { name: "SEO" as const, findings: buildSeoFindings(seo, robots, sitemap) },
+        {
+          name: "Accessibility" as const,
+          findings: psiMobile.failedAccessibility.length
+            ? psiMobile.failedAccessibility.map((a) => ({ severity: sevFromScore((a.score ?? 0) * 100), title: a.title, detail: a.description?.slice(0, 220) ?? "", impact: "Affects users with assistive tech." }))
+            : [{ severity: "info" as const, title: "No accessibility failures from Lighthouse", detail: `Score ${psiMobile.scores.accessibility}/100.`, impact: "Good baseline." }],
+        },
+        {
+          name: "Mobile" as const,
+          findings: [
+            { severity: seo.viewport ? "info" : "critical", title: seo.viewport ? "Viewport meta present" : "Missing viewport meta", detail: seo.viewport ?? "Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">", impact: seo.viewport ? "Page is mobile-render-ready." : "Page won't scale on mobile devices." },
+            { severity: sevFromScore(psiMobile.scores.performance), title: `Mobile Lighthouse performance: ${psiMobile.scores.performance}/100`, detail: `LCP ${psiMobile.metrics.lcp ?? "?"} · TBT ${psiMobile.metrics.tbt ?? "?"}`, impact: "Mobile-first indexing makes this the primary signal." },
+            ...(desktop ? [{ severity: sevFromScore(desktop.scores.performance), title: `Desktop performance: ${desktop.scores.performance}/100`, detail: `LCP ${desktop.metrics.lcp ?? "?"} · TBT ${desktop.metrics.tbt ?? "?"}`, impact: "Desktop benchmark for comparison." }] : []),
+          ],
+        },
+        { name: "Broken Links" as const, findings: buildBrokenLinkFindings(linkChecks) },
+      ],
+      recommendations: buildRecommendations(psiMobile, seo, brokenCount),
     };
 
-    const system = [
-      "You are NovaCommerce — an elite eCommerce growth agency's senior auditor.",
-      "You are given REAL, measured signals collected from the target page (HTTP status, response time, page weight, parsed meta tags, headings, image alt coverage, script/stylesheet counts, detected tech, broken-link sample, security headers).",
-      "Ground EVERY finding in the supplied facts. Quote specific numbers (e.g. 'TTFB 2,140 ms', 'meta description missing', '12 of 38 images lack alt', '3 broken internal links').",
-      "Never invent data not present in the facts. If a signal is unavailable, say so — do not guess.",
-      "Be honest and discriminating. Scores must reflect the evidence: e.g. TTFB > 1500ms or page > 3MB should drop Performance below 60; missing meta description / H1 / canonical drops SEO sharply; broken links drop UX; missing viewport drops Mobile severely; missing image alts drops Accessibility.",
-      "Most stores score 45-75. Reserve 85+ for genuinely excellent signals. Sites with broken links, missing meta, or slow TTFB should NOT score above 70 in those categories.",
-      "HARD RULES: If visibleWordCount < 150, OR title is missing/empty, OR h1Count == 0, OR there are fewer than 3 internal links, the site is essentially empty — every score MUST be below 35 and the summary must say the site has no real content. Do NOT be polite about an empty site.",
-      "If imgs == 0 AND scripts < 3 AND stylesheets < 2, treat as a static placeholder — Performance/SEO/Conversion all below 40.",
-      "Cover: Performance, SEO, Mobile, UX, Conversion (CRO), Accessibility, and Broken Links.",
-      "Always call the return_audit tool. Never reply in plain text.",
-    ].join(" ");
-
-    let resp: Response;
-    try {
-      resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            { role: "system", content: system },
-            {
-              role: "user",
-              content:
-                `Audit this website using ONLY the measured signals below.\n\nURL: ${probe.finalUrl}\n\nMEASURED SIGNALS (JSON):\n` +
-                JSON.stringify(facts, null, 2),
-            },
-          ],
-          tools: [auditTool],
-          tool_choice: { type: "function", function: { name: "return_audit" } },
-        }),
-      });
-    } catch (e) {
-      console.error("AI gateway fetch failed", e);
-      return { ok: false as const, error: "Audit service unreachable. Try again." };
-    }
-
-    if (resp.status === 429) {
-      return { ok: false as const, error: "We're rate limited. Please try again in a minute." };
-    }
-    if (resp.status === 402) {
-      return { ok: false as const, error: "AI credits exhausted. Add funds in Workspace > Usage." };
-    }
-    if (!resp.ok) {
-      const body = await resp.text().catch(() => "");
-      console.error("AI gateway error", resp.status, body);
-      return { ok: false as const, error: `Audit failed (${resp.status}).` };
-    }
-
-    const json = await resp.json().catch(() => null) as any;
-    const call = json?.choices?.[0]?.message?.tool_calls?.[0];
-    const argsStr = call?.function?.arguments;
-    if (!argsStr) {
-      return { ok: false as const, error: "Audit returned no data." };
-    }
-
-    try {
-      const parsed = JSON.parse(argsStr);
-      return { ok: true as const, url: probe.finalUrl, audit: parsed, facts };
-    } catch {
-      return { ok: false as const, error: "Failed to parse audit." };
-    }
+    return {
+      ok: true as const,
+      url: probe.finalUrl,
+      audit,
+      lighthouse: {
+        mobile: psiMobile,
+        desktop,
+      },
+      probe: {
+        status: probe.status,
+        ttfbMs: probe.ttfbMs,
+        totalMs: probe.totalMs,
+        bytes: probe.bytes,
+        server: probe.headers["server"] ?? null,
+        hsts: !!probe.headers["strict-transport-security"],
+      },
+      seoSignals: seo,
+    };
   });
