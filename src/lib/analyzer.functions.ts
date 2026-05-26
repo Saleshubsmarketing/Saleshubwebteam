@@ -394,6 +394,8 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       "Never invent data not present in the facts. If a signal is unavailable, say so — do not guess.",
       "Be honest and discriminating. Scores must reflect the evidence: e.g. TTFB > 1500ms or page > 3MB should drop Performance below 60; missing meta description / H1 / canonical drops SEO sharply; broken links drop UX; missing viewport drops Mobile severely; missing image alts drops Accessibility.",
       "Most stores score 45-75. Reserve 85+ for genuinely excellent signals. Sites with broken links, missing meta, or slow TTFB should NOT score above 70 in those categories.",
+      "HARD RULES: If visibleWordCount < 150, OR title is missing/empty, OR h1Count == 0, OR there are fewer than 3 internal links, the site is essentially empty — every score MUST be below 35 and the summary must say the site has no real content. Do NOT be polite about an empty site.",
+      "If imgs == 0 AND scripts < 3 AND stylesheets < 2, treat as a static placeholder — Performance/SEO/Conversion all below 40.",
       "Cover: Performance, SEO, Mobile, UX, Conversion (CRO), Accessibility, and Broken Links.",
       "Always call the return_audit tool. Never reply in plain text.",
     ].join(" ");
