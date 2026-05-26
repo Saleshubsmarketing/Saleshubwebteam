@@ -290,6 +290,74 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes). The page may require JavaScript or is misconfigured.` };
     }
 
+    /* 1b. Detect parked / placeholder / soft-404 pages that return HTTP 200 but contain no real content. */
+    const htmlLower = probe.html.toLowerCase();
+    const textOnly = probe.html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const wordCount = textOnly ? textOnly.split(" ").length : 0;
+
+    const parkedSignals = [
+      "domain is for sale",
+      "buy this domain",
+      "this domain is for sale",
+      "domain for sale",
+      "parked free",
+      "parked by",
+      "godaddy.com/domains",
+      "sedoparking",
+      "hugedomains",
+      "dan.com",
+      "afternic",
+      "namecheap parking",
+      "future home of",
+      "default web site page",
+      "apache2 ubuntu default page",
+      "welcome to nginx",
+      "it works!",
+      "index of /",
+    ];
+    const softErrorSignals = [
+      "404 not found",
+      "page not found",
+      "site not found",
+      "this site can",
+      "no such host",
+      "under construction",
+      "coming soon",
+      "account suspended",
+      "site temporarily unavailable",
+      "service unavailable",
+      "bad gateway",
+    ];
+
+    const matchedParked = parkedSignals.find((s) => htmlLower.includes(s));
+    if (matchedParked) {
+      return {
+        ok: false as const,
+        error: `${probe.finalUrl} appears to be a parked or placeholder domain (matched: "${matchedParked}"). There is no real site to audit.`,
+      };
+    }
+
+    const matchedSoftError = softErrorSignals.find((s) => htmlLower.includes(s));
+    // Only treat as soft-404 if the page is also thin (parked/error pages are usually tiny).
+    if (matchedSoftError && wordCount < 80) {
+      return {
+        ok: false as const,
+        error: `${probe.finalUrl} looks like an error or placeholder page (matched: "${matchedSoftError}", only ${wordCount} words of content). Nothing real to audit.`,
+      };
+    }
+
+    if (wordCount < 40) {
+      return {
+        ok: false as const,
+        error: `${probe.finalUrl} returned only ${wordCount} words of visible content. The page is empty, JS-rendered without SSR, or misconfigured — cannot run a meaningful audit.`,
+      };
+    }
+
     /* 2. Extract real on-page signals. */
     const signals = extractSignals(probe, probe.finalUrl);
 
@@ -306,6 +374,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       ttfbMs: probe.ttfbMs,
       totalLoadMs: probe.totalMs,
       pageBytes: probe.bytes,
+      visibleWordCount: wordCount,
       contentType: probe.contentType,
       server: probe.headers["server"] ?? null,
       hsts: !!probe.headers["strict-transport-security"],
@@ -325,6 +394,8 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       "Never invent data not present in the facts. If a signal is unavailable, say so — do not guess.",
       "Be honest and discriminating. Scores must reflect the evidence: e.g. TTFB > 1500ms or page > 3MB should drop Performance below 60; missing meta description / H1 / canonical drops SEO sharply; broken links drop UX; missing viewport drops Mobile severely; missing image alts drops Accessibility.",
       "Most stores score 45-75. Reserve 85+ for genuinely excellent signals. Sites with broken links, missing meta, or slow TTFB should NOT score above 70 in those categories.",
+      "HARD RULES: If visibleWordCount < 150, OR title is missing/empty, OR h1Count == 0, OR there are fewer than 3 internal links, the site is essentially empty — every score MUST be below 35 and the summary must say the site has no real content. Do NOT be polite about an empty site.",
+      "If imgs == 0 AND scripts < 3 AND stylesheets < 2, treat as a static placeholder — Performance/SEO/Conversion all below 40.",
       "Cover: Performance, SEO, Mobile, UX, Conversion (CRO), Accessibility, and Broken Links.",
       "Always call the return_audit tool. Never reply in plain text.",
     ].join(" ");
