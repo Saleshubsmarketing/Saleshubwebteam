@@ -5,7 +5,7 @@ import {
   Download, Loader2, Gauge, Search, Smartphone, MousePointer2, Accessibility,
   Link2, TrendingUp, ArrowRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useServerFn } from "@tanstack/react-start";
 import { analyzeWebsite } from "@/lib/analyzer.functions";
@@ -18,6 +18,10 @@ type Audit = {
   scores: { performance: number; seo: number; mobile: number; ux: number; conversion: number; accessibility: number };
   categories: Category[];
   recommendations: Recommendation[];
+};
+type LighthouseSide = {
+  scores: { performance: number; accessibility: number; bestPractices: number; seo: number };
+  metrics: { fcp: string | null; lcp: string | null; cls: string | null; tbt: string | null; si: string | null; tti: string | null };
 };
 
 export const Route = createFileRoute("/website-analyzer")({
@@ -37,6 +41,29 @@ function AnalyzerPage() {
   const [error, setError] = useState<string | null>(null);
   const [audit, setAudit] = useState<Audit | null>(null);
   const [scannedUrl, setScannedUrl] = useState<string | null>(null);
+  const [cwv, setCwv] = useState<LighthouseSide | null>(null);
+  const [progressMsg, setProgressMsg] = useState("Validating URL…");
+
+  useEffect(() => {
+    if (!running) return;
+    const steps = [
+      "Validating URL & SSL certificate…",
+      "Probing server response and headers…",
+      "Extracting on-page SEO signals…",
+      "Running Google Lighthouse (mobile)…",
+      "Running Google Lighthouse (desktop)…",
+      "Checking robots.txt and sitemap.xml…",
+      "Sampling internal links for 404s…",
+      "Compiling audit dashboard…",
+    ];
+    let i = 0;
+    setProgressMsg(steps[0]);
+    const id = setInterval(() => {
+      i = Math.min(i + 1, steps.length - 1);
+      setProgressMsg(steps[i]);
+    }, 4500);
+    return () => clearInterval(id);
+  }, [running]);
 
   const run = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,11 +71,13 @@ function AnalyzerPage() {
     setRunning(true);
     setError(null);
     setAudit(null);
+    setCwv(null);
     try {
       const res = await analyze({ data: { url } });
       if (res.ok) {
         setAudit(res.audit as Audit);
         setScannedUrl(res.url);
+        setCwv((res as any).lighthouse?.mobile ?? null);
       } else {
         setError(res.error);
       }
@@ -120,7 +149,7 @@ function AnalyzerPage() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="mt-6 glass rounded-2xl p-5 text-sm text-muted-foreground flex items-center gap-3">
                   <Loader2 className="w-4 h-4 animate-spin text-[var(--brand-cyan)]" />
-                  AI is crawling signals, scoring categories and drafting fixes…
+                  {progressMsg}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -130,6 +159,29 @@ function AnalyzerPage() {
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                 className="mt-6 space-y-4"
               >
+                {cwv && (
+                  <div className="glass rounded-2xl p-5">
+                    <p className="text-sm font-medium mb-3 flex items-center gap-2">
+                      <Gauge className="w-4 h-4 text-[var(--brand-cyan)]" /> Core Web Vitals (Google Lighthouse · Mobile)
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                      {[
+                        { k: "LCP", v: cwv.metrics.lcp },
+                        { k: "FCP", v: cwv.metrics.fcp },
+                        { k: "CLS", v: cwv.metrics.cls },
+                        { k: "TBT", v: cwv.metrics.tbt },
+                        { k: "Speed Index", v: cwv.metrics.si },
+                        { k: "TTI", v: cwv.metrics.tti },
+                      ].map((m) => (
+                        <div key={m.k} className="rounded-xl bg-white/[0.03] border border-white/5 p-3 text-center">
+                          <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{m.k}</p>
+                          <p className="text-sm font-semibold mt-1">{m.v ?? "—"}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Summary */}
                 <div className="glass rounded-2xl p-5 flex flex-col md:flex-row md:items-center gap-4 justify-between">
                   <div className="flex gap-3">
