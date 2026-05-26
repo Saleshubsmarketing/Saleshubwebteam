@@ -290,6 +290,74 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes). The page may require JavaScript or is misconfigured.` };
     }
 
+    /* 1b. Detect parked / placeholder / soft-404 pages that return HTTP 200 but contain no real content. */
+    const htmlLower = probe.html.toLowerCase();
+    const textOnly = probe.html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    const wordCount = textOnly ? textOnly.split(" ").length : 0;
+
+    const parkedSignals = [
+      "domain is for sale",
+      "buy this domain",
+      "this domain is for sale",
+      "domain for sale",
+      "parked free",
+      "parked by",
+      "godaddy.com/domains",
+      "sedoparking",
+      "hugedomains",
+      "dan.com",
+      "afternic",
+      "namecheap parking",
+      "future home of",
+      "default web site page",
+      "apache2 ubuntu default page",
+      "welcome to nginx",
+      "it works!",
+      "index of /",
+    ];
+    const softErrorSignals = [
+      "404 not found",
+      "page not found",
+      "site not found",
+      "this site can",
+      "no such host",
+      "under construction",
+      "coming soon",
+      "account suspended",
+      "site temporarily unavailable",
+      "service unavailable",
+      "bad gateway",
+    ];
+
+    const matchedParked = parkedSignals.find((s) => htmlLower.includes(s));
+    if (matchedParked) {
+      return {
+        ok: false as const,
+        error: `${probe.finalUrl} appears to be a parked or placeholder domain (matched: "${matchedParked}"). There is no real site to audit.`,
+      };
+    }
+
+    const matchedSoftError = softErrorSignals.find((s) => htmlLower.includes(s));
+    // Only treat as soft-404 if the page is also thin (parked/error pages are usually tiny).
+    if (matchedSoftError && wordCount < 80) {
+      return {
+        ok: false as const,
+        error: `${probe.finalUrl} looks like an error or placeholder page (matched: "${matchedSoftError}", only ${wordCount} words of content). Nothing real to audit.`,
+      };
+    }
+
+    if (wordCount < 40) {
+      return {
+        ok: false as const,
+        error: `${probe.finalUrl} returned only ${wordCount} words of visible content. The page is empty, JS-rendered without SSR, or misconfigured — cannot run a meaningful audit.`,
+      };
+    }
+
     /* 2. Extract real on-page signals. */
     const signals = extractSignals(probe, probe.finalUrl);
 
@@ -306,6 +374,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       ttfbMs: probe.ttfbMs,
       totalLoadMs: probe.totalMs,
       pageBytes: probe.bytes,
+      visibleWordCount: wordCount,
       contentType: probe.contentType,
       server: probe.headers["server"] ?? null,
       hsts: !!probe.headers["strict-transport-security"],
