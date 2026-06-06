@@ -602,16 +602,17 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       seo.internalLinks.length ? Promise.all(seo.internalLinks.slice(0, 6).map((u) => checkUrlStatus(u))) : Promise.resolve([]),
     ]);
 
-    if ("error" in psiMobile)
-      return { ok: false as const, error: `Google PageSpeed Insights failed: ${psiMobile.error}` };
-
+    const mobile = "error" in psiMobile ? null : psiMobile;
     const desktop = "error" in psiDesktop ? null : psiDesktop;
     const brokenCount = linkChecks.filter((l) => !l.ok).length;
     const liveScores = computeLiveScores(probe, seo, page, brokenCount, robots, sitemap);
+    const lighthouseSummary = mobile
+      ? `Google Lighthouse mobile scored Performance ${mobile.scores.performance}/100, SEO ${mobile.scores.seo}/100, Accessibility ${mobile.scores.accessibility}/100, Best Practices ${mobile.scores.bestPractices}/100.`
+      : "Google Lighthouse is temporarily unavailable, so this report uses only live crawl and header analysis.";
 
     // 4. Build the dashboard from REAL data only
     const audit = {
-      summary: `Live scan of ${new URL(probe.finalUrl).hostname}: HTTP ${probe.status}, TTFB ${probe.ttfbMs} ms, total load sample ${probe.totalMs} ms, page weight ${Math.round(probe.bytes / 1024)} KB. Google Lighthouse mobile scored Performance ${psiMobile.scores.performance}/100, SEO ${psiMobile.scores.seo}/100, Accessibility ${psiMobile.scores.accessibility}/100, Best Practices ${psiMobile.scores.bestPractices}/100. ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} found in a sample of ${linkChecks.length}.`,
+      summary: `Live scan of ${new URL(probe.finalUrl).hostname}: HTTP ${probe.status}, TTFB ${probe.ttfbMs} ms, total load sample ${probe.totalMs} ms, page weight ${Math.round(probe.bytes / 1024)} KB. ${lighthouseSummary} ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} found in a sample of ${linkChecks.length}.`,
       scores: {
         performance: liveScores.performance,
         seo: liveScores.seo,
@@ -621,25 +622,25 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
         accessibility: liveScores.accessibility,
       },
       categories: [
-        { name: "Performance" as const, findings: buildPerfFindings(psiMobile, probe.totalMs, probe.bytes) },
+        { name: "Performance" as const, findings: buildPerfFindings(mobile, probe.totalMs, probe.bytes, page, liveScores.performance) },
         { name: "SEO" as const, findings: buildSeoFindings(seo, robots, sitemap) },
         {
           name: "Accessibility" as const,
-          findings: psiMobile.failedAccessibility.length
-            ? psiMobile.failedAccessibility.map((a) => ({ severity: sevFromScore((a.score ?? 0) * 100), title: a.title, detail: a.description?.slice(0, 220) ?? "", impact: "Affects users with assistive tech." }))
+          findings: mobile?.failedAccessibility.length
+            ? mobile.failedAccessibility.map((a) => ({ severity: sevFromScore((a.score ?? 0) * 100), title: a.title, detail: a.description?.slice(0, 220) ?? "", impact: "Affects users with assistive tech." }))
             : [{ severity: "info" as const, title: "No Lighthouse accessibility failures detected", detail: `Live accessibility score ${liveScores.accessibility}/100.`, impact: "Good baseline." }],
         },
         {
           name: "Mobile" as const,
           findings: [
             { severity: seo.viewport ? "info" : "critical", title: seo.viewport ? "Viewport meta present" : "Missing viewport meta", detail: seo.viewport ?? "Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">", impact: seo.viewport ? "Page is mobile-render-ready." : "Page won't scale on mobile devices." },
-            { severity: sevFromScore(liveScores.mobile), title: `Mobile readiness score: ${liveScores.mobile}/100`, detail: `Lighthouse ${psiMobile.scores.performance}/100 · LCP ${psiMobile.metrics.lcp ?? "?"} · TBT ${psiMobile.metrics.tbt ?? "?"}`, impact: "Mobile-first indexing makes this the primary signal." },
+            { severity: sevFromScore(liveScores.mobile), title: `Mobile readiness score: ${liveScores.mobile}/100`, detail: mobile ? `Lighthouse ${mobile.scores.performance}/100 · LCP ${mobile.metrics.lcp ?? "?"} · TBT ${mobile.metrics.tbt ?? "?"}` : `Viewport ${seo.viewport ? "present" : "missing"} · HTML ${Math.round(probe.bytes / 1024)} KB · TTFB ${probe.ttfbMs} ms`, impact: "Mobile-first indexing makes this the primary signal." },
             ...(desktop ? [{ severity: sevFromScore(desktop.scores.performance), title: `Desktop performance: ${desktop.scores.performance}/100`, detail: `LCP ${desktop.metrics.lcp ?? "?"} · TBT ${desktop.metrics.tbt ?? "?"}`, impact: "Desktop benchmark for comparison." }] : []),
           ],
         },
         { name: "Broken Links" as const, findings: buildBrokenLinkFindings(linkChecks) },
       ],
-      recommendations: buildRecommendations(psiMobile, seo, brokenCount),
+      recommendations: buildRecommendations(mobile, seo, brokenCount, page, liveScores),
     };
 
     return {
@@ -647,7 +648,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       url: probe.finalUrl,
       audit,
       lighthouse: {
-        mobile: psiMobile,
+        mobile,
         desktop,
       },
       probe: {
