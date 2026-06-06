@@ -176,6 +176,104 @@ async function checkUrlStatus(url: string, timeoutMs = 6000) {
   }
 }
 
+type PageSignals = {
+  buttons: number;
+  forms: number;
+  inputs: number;
+  wordCount: number;
+  hasCompression: boolean;
+  hasCacheHints: boolean;
+  hasHttps: boolean;
+};
+
+function stripMarkup(html: string) {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractPageSignals(html: string, finalUrl: string, headers: Record<string, string>): PageSignals {
+  const text = stripMarkup(html);
+  return {
+    buttons: (html.match(/<button\b/gi) || []).length,
+    forms: (html.match(/<form\b/gi) || []).length,
+    inputs: (html.match(/<(input|textarea|select)\b/gi) || []).length,
+    wordCount: text ? text.split(/\s+/).filter(Boolean).length : 0,
+    hasCompression: /\b(br|gzip|deflate)\b/i.test(headers["content-encoding"] ?? ""),
+    hasCacheHints: /(max-age|s-maxage|public|stale-while-revalidate)/i.test(headers["cache-control"] ?? ""),
+    hasHttps: /^https:/i.test(finalUrl),
+  };
+}
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function computeLiveScores(
+  probe: FetchProbe,
+  seo: ReturnType<typeof extractSeoSignals>,
+  page: PageSignals,
+  brokenCount: number,
+  robots: { ok: boolean; status: number },
+  sitemap: { ok: boolean; status: number },
+) {
+  const performance = clampScore(
+    100
+      - Math.max(0, Math.round((probe.ttfbMs - 600) / 30))
+      - Math.max(0, Math.round((probe.totalMs - 1800) / 50))
+      - Math.max(0, Math.round((probe.bytes - 300_000) / 60_000))
+      - (page.hasCompression ? 0 : 10)
+      - (page.hasCacheHints ? 0 : 6),
+  );
+
+  const seoScore = clampScore(
+    100
+      - (!seo.title ? 18 : 0)
+      - (seo.title && (seo.titleLen < 20 || seo.titleLen > 65) ? 6 : 0)
+      - (!seo.metaDesc ? 18 : 0)
+      - (seo.metaDesc && (seo.metaDescLen < 70 || seo.metaDescLen > 165) ? 6 : 0)
+      - (seo.h1Count === 0 ? 16 : seo.h1Count > 1 ? 8 : 0)
+      - (!seo.canonical ? 8 : 0)
+      - (!seo.viewport ? 14 : 0)
+      - (!seo.lang ? 6 : 0)
+      - (!seo.hasJsonLd ? 4 : 0)
+      - (!seo.ogTitle && !seo.ogImage ? 4 : 0)
+      - (!robots.ok ? 6 : 0)
+      - (!sitemap.ok ? 6 : 0),
+  );
+
+  const altPenalty = seo.imgs > 0 ? Math.round((seo.imgsMissingAlt / seo.imgs) * 40) : 0;
+  const accessibility = clampScore(
+    100 - (!seo.lang ? 10 : 0) - (!seo.viewport ? 15 : 0) - (seo.h1Count !== 1 ? 10 : 0) - altPenalty,
+  );
+
+  const mobile = clampScore(
+    performance * 0.65 + accessibility * 0.15 + (seo.viewport ? 20 : 0) - (probe.bytes > 1_500_000 ? 10 : 0),
+  );
+
+  const ux = clampScore(
+    performance * 0.4 + accessibility * 0.25 + seoScore * 0.2 + Math.max(0, 15 - brokenCount * 5),
+  );
+
+  const conversion = clampScore(
+    60 + (page.forms > 0 ? 12 : 0) + Math.min(page.buttons, 4) * 4 + (seo.metaDesc ? 6 : 0) + (page.hasHttps ? 6 : 0)
+      + (brokenCount === 0 ? 8 : -brokenCount * 6) + (page.wordCount < 150 ? -10 : 0) + (performance >= 70 ? 6 : performance < 50 ? -10 : 0),
+  );
+
+  return {
+    performance,
+    seo: seoScore,
+    mobile,
+    ux,
+    conversion,
+    accessibility,
+  };
+}
+
 /* -------- Google PageSpeed Insights (real Lighthouse) -------- */
 
 type PsiStrategy = "mobile" | "desktop";
@@ -210,29 +308,16 @@ type PsiResult = {
 };
 
 async function runPsi(url: string, strategy: PsiStrategy): Promise<PsiResult | { error: string }> {
-  const key = process.env.PAGESPEED_API_KEY;
-  const params = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     url,
     strategy,
     category: "performance",
   });
-  // PSI supports repeated `category` params
   const extraCats = ["accessibility", "best-practices", "seo"];
-  let qs = params.toString();
-  for (const c of extraCats) qs += `&category=${encodeURIComponent(c)}`;
-  if (key) qs += `&key=${encodeURIComponent(key)}`;
+  let baseQs = baseParams.toString();
+  for (const c of extraCats) baseQs += `&category=${encodeURIComponent(c)}`;
 
-  const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${qs}`;
-
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 90_000);
-  try {
-    const res = await fetch(endpoint, { signal: ctrl.signal });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return { error: `PageSpeed API ${res.status}: ${body.slice(0, 200)}` };
-    }
-    const data = (await res.json()) as any;
+  const parseResponse = async (data: any): Promise<PsiResult | { error: string }> => {
     const lh = data?.lighthouseResult;
     if (!lh) return { error: "PageSpeed returned no Lighthouse result." };
     const cats = lh.categories ?? {};
@@ -291,6 +376,38 @@ async function runPsi(url: string, strategy: PsiStrategy): Promise<PsiResult | {
       failedSeo: failedFrom("seo"),
       failedBestPractices: failedFrom("best-practices"),
     };
+  };
+
+  const key = process.env.PAGESPEED_API_KEY?.trim();
+  const attempts = [key ? `${baseQs}&key=${encodeURIComponent(key)}` : null, baseQs].filter(
+    (value, index, arr): value is string => !!value && arr.indexOf(value) === index,
+  );
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 90_000);
+  try {
+    let lastError = "PageSpeed request failed.";
+    for (const query of attempts) {
+      const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${query}`;
+      const res = await fetch(endpoint, { signal: ctrl.signal });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        return parseResponse(data);
+      }
+
+      const body = await res.text().catch(() => "");
+      const normalized = body.slice(0, 400);
+      if (res.status === 403 && /has not been used|disabled|API key not valid/i.test(normalized)) {
+        lastError = `PageSpeed API key rejected (${res.status}).`;
+        continue;
+      }
+      if (res.status === 429) {
+        lastError = "Google PageSpeed rate limit reached. Try again in a minute.";
+        continue;
+      }
+      return { error: `PageSpeed API ${res.status}: ${normalized.slice(0, 200)}` };
+    }
+    return { error: lastError };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: /AbortError/i.test(msg) ? "PageSpeed timed out (90s)." : msg };
@@ -345,13 +462,15 @@ function buildSeoFindings(seo: ReturnType<typeof extractSeoSignals>, robots: { o
   return out;
 }
 
-function buildPerfFindings(psi: PsiResult, probeMs: number, bytes: number): Finding[] {
+function buildPerfFindings(psi: PsiResult | null, probeMs: number, bytes: number, page: PageSignals, livePerformance: number): Finding[] {
   const out: Finding[] = [];
   out.push({
-    severity: sevFromScore(psi.scores.performance),
-    title: `Lighthouse performance score: ${psi.scores.performance}/100`,
-    detail: `LCP ${psi.metrics.lcp ?? "?"} · CLS ${psi.metrics.cls ?? "?"} · TBT ${psi.metrics.tbt ?? "?"} · FCP ${psi.metrics.fcp ?? "?"} · SI ${psi.metrics.si ?? "?"}`,
-    impact: psi.scores.performance < 50 ? "Critical: poor Core Web Vitals reduce SEO rankings and conversion." : "Faster pages convert better and rank higher.",
+    severity: sevFromScore(livePerformance),
+    title: psi ? `Lighthouse performance score: ${psi.scores.performance}/100` : `Live performance score: ${livePerformance}/100`,
+    detail: psi
+      ? `LCP ${psi.metrics.lcp ?? "?"} · CLS ${psi.metrics.cls ?? "?"} · TBT ${psi.metrics.tbt ?? "?"} · FCP ${psi.metrics.fcp ?? "?"} · SI ${psi.metrics.si ?? "?"}`
+      : `TTFB ${probeMs} ms · HTML ${Math.round(bytes / 1024)} KB · Compression ${page.hasCompression ? "on" : "off"} · Cache hints ${page.hasCacheHints ? "present" : "missing"}`,
+    impact: livePerformance < 50 ? "Critical: poor speed signals reduce SEO rankings and conversion." : "Faster pages convert better and rank higher.",
   });
   out.push({
     severity: probeMs > 2000 ? "warning" : "info",
@@ -359,6 +478,23 @@ function buildPerfFindings(psi: PsiResult, probeMs: number, bytes: number): Find
     detail: `Total response measured at ${probeMs} ms · ${Math.round(bytes / 1024)} KB transferred.`,
     impact: probeMs > 2000 ? "Slow server response delays everything downstream." : "Server response is healthy.",
   });
+  if (!psi) {
+    out.push({
+      severity: page.hasCompression ? "info" : "warning",
+      title: page.hasCompression ? "Compression detected" : "Compression missing",
+      detail: page.hasCompression ? "The server sends compressed responses." : "Enable gzip or Brotli on HTML responses.",
+      impact: page.hasCompression ? "Helps transfer performance." : "Inflates transfer size and slows mobile loads.",
+    });
+    if (!page.hasCacheHints) {
+      out.push({
+        severity: "warning",
+        title: "Cache-control hints missing",
+        detail: "Response headers do not expose strong browser caching hints.",
+        impact: "Repeat visits may remain slower than necessary.",
+      });
+    }
+    return out;
+  }
   for (const o of psi.opportunities.slice(0, 4)) {
     out.push({
       severity: (o.score ?? 1) < 0.5 ? "critical" : "warning",
@@ -383,9 +519,11 @@ function buildBrokenLinkFindings(checks: { url: string; status: number; ok: bool
 }
 
 function buildRecommendations(
-  psi: PsiResult,
+  psi: PsiResult | null,
   seo: ReturnType<typeof extractSeoSignals>,
   broken: number,
+  page: PageSignals,
+  liveScores: ReturnType<typeof computeLiveScores>,
 ): Recommendation[] {
   const recs: Recommendation[] = [];
   if (!seo.title || seo.titleLen < 20 || seo.titleLen > 65)
@@ -400,16 +538,25 @@ function buildRecommendations(
     recs.push({ priority: "medium", title: "Add a canonical tag", detail: "Prevent duplicate-content penalties across URL variants.", effort: "low" });
   if (broken > 0)
     recs.push({ priority: "high", title: `Fix ${broken} broken internal link${broken === 1 ? "" : "s"}`, detail: "Repair or remove dead links to recover lost authority and trust.", effort: "low" });
-  for (const o of psi.opportunities.slice(0, 4)) {
-    recs.push({
-      priority: (o.score ?? 1) < 0.5 ? "high" : "medium",
-      title: o.title,
-      detail: (o.displayValue ? `${o.displayValue}. ` : "") + "From Google Lighthouse opportunities.",
-      effort: "medium",
-    });
+  if (psi) {
+    for (const o of psi.opportunities.slice(0, 4)) {
+      recs.push({
+        priority: (o.score ?? 1) < 0.5 ? "high" : "medium",
+        title: o.title,
+        detail: (o.displayValue ? `${o.displayValue}. ` : "") + "From Google Lighthouse opportunities.",
+        effort: "medium",
+      });
+    }
+  } else {
+    if (!page.hasCompression) {
+      recs.push({ priority: "high", title: "Enable Brotli or gzip compression", detail: "The live scan did not detect compressed HTML delivery from the server.", effort: "medium" });
+    }
+    if (!page.hasCacheHints) {
+      recs.push({ priority: "medium", title: "Add browser caching headers", detail: "Set cache-control headers for HTML and static assets to speed up repeat visits.", effort: "medium" });
+    }
   }
-  if (psi.scores.accessibility < 90)
-    recs.push({ priority: psi.scores.accessibility < 60 ? "high" : "medium", title: `Improve accessibility (${psi.scores.accessibility}/100)`, detail: "Address Lighthouse accessibility failures — alt text, color contrast, ARIA, labels.", effort: "medium" });
+  if (liveScores.accessibility < 90)
+    recs.push({ priority: liveScores.accessibility < 60 ? "high" : "medium", title: `Improve accessibility (${liveScores.accessibility}/100)`, detail: psi ? "Address Lighthouse accessibility failures — alt text, color contrast, ARIA, labels." : "Fix missing alt text, heading structure, language tags, and mobile viewport issues found in the live crawl.", effort: "medium" });
   if (!seo.hasJsonLd)
     recs.push({ priority: "low", title: "Add structured data (JSON-LD)", detail: "Mark up Product, Organization, BreadcrumbList for rich results.", effort: "medium" });
   return recs.slice(0, 10);
@@ -437,9 +584,17 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       return { ok: false as const, error: `${url} returned ${probe.contentType || "non-HTML content"} — only HTML pages can be audited.` };
     if (probe.html.length < 200)
       return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes).` };
+    const pageText = stripMarkup(probe.html).toLowerCase();
+    if (
+      pageText.length < 400
+      && /(domain for sale|parked free|coming soon|under construction|this domain is for sale|buy this domain)/i.test(pageText)
+    ) {
+      return { ok: false as const, error: `${url} is not a live website yet — it appears parked, placeholder, or coming soon.` };
+    }
 
     // 2. Real on-page SEO signals
     const seo = extractSeoSignals(probe.html, probe.finalUrl);
+    const page = extractPageSignals(probe.html, probe.finalUrl, probe.headers);
 
     // 3. Real Lighthouse audit via Google PageSpeed Insights + robots/sitemap + broken-link sample (parallel)
     const origin = new URL(probe.finalUrl).origin;
@@ -451,43 +606,45 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       seo.internalLinks.length ? Promise.all(seo.internalLinks.slice(0, 6).map((u) => checkUrlStatus(u))) : Promise.resolve([]),
     ]);
 
-    if ("error" in psiMobile)
-      return { ok: false as const, error: `Google PageSpeed Insights failed: ${psiMobile.error}` };
-
+    const mobile = "error" in psiMobile ? null : psiMobile;
     const desktop = "error" in psiDesktop ? null : psiDesktop;
     const brokenCount = linkChecks.filter((l) => !l.ok).length;
+    const liveScores = computeLiveScores(probe, seo, page, brokenCount, robots, sitemap);
+    const lighthouseSummary = mobile
+      ? `Google Lighthouse mobile scored Performance ${mobile.scores.performance}/100, SEO ${mobile.scores.seo}/100, Accessibility ${mobile.scores.accessibility}/100, Best Practices ${mobile.scores.bestPractices}/100.`
+      : "Google Lighthouse is temporarily unavailable, so this report uses only live crawl and header analysis.";
 
     // 4. Build the dashboard from REAL data only
     const audit = {
-      summary: `Lighthouse: Performance ${psiMobile.scores.performance}/100 · SEO ${psiMobile.scores.seo}/100 · Accessibility ${psiMobile.scores.accessibility}/100 · Best Practices ${psiMobile.scores.bestPractices}/100 (mobile). LCP ${psiMobile.metrics.lcp ?? "?"}, CLS ${psiMobile.metrics.cls ?? "?"}, TBT ${psiMobile.metrics.tbt ?? "?"}. ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} in sample of ${linkChecks.length}.`,
+      summary: `Live scan of ${new URL(probe.finalUrl).hostname}: HTTP ${probe.status}, TTFB ${probe.ttfbMs} ms, total load sample ${probe.totalMs} ms, page weight ${Math.round(probe.bytes / 1024)} KB. ${lighthouseSummary} ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} found in a sample of ${linkChecks.length}.`,
       scores: {
-        performance: psiMobile.scores.performance,
-        seo: psiMobile.scores.seo,
-        mobile: psiMobile.scores.performance, // mobile-strategy Lighthouse score
-        ux: Math.round((psiMobile.scores.performance + psiMobile.scores.accessibility) / 2),
-        conversion: Math.max(0, Math.min(100, psiMobile.scores.performance - brokenCount * 5 - (seo.metaDesc ? 0 : 10) - (seo.h1Count === 1 ? 0 : 8))),
-        accessibility: psiMobile.scores.accessibility,
+        performance: liveScores.performance,
+        seo: liveScores.seo,
+        mobile: liveScores.mobile,
+        ux: liveScores.ux,
+        conversion: liveScores.conversion,
+        accessibility: liveScores.accessibility,
       },
       categories: [
-        { name: "Performance" as const, findings: buildPerfFindings(psiMobile, probe.totalMs, probe.bytes) },
+        { name: "Performance" as const, findings: buildPerfFindings(mobile, probe.totalMs, probe.bytes, page, liveScores.performance) },
         { name: "SEO" as const, findings: buildSeoFindings(seo, robots, sitemap) },
         {
           name: "Accessibility" as const,
-          findings: psiMobile.failedAccessibility.length
-            ? psiMobile.failedAccessibility.map((a) => ({ severity: sevFromScore((a.score ?? 0) * 100), title: a.title, detail: a.description?.slice(0, 220) ?? "", impact: "Affects users with assistive tech." }))
-            : [{ severity: "info" as const, title: "No accessibility failures from Lighthouse", detail: `Score ${psiMobile.scores.accessibility}/100.`, impact: "Good baseline." }],
+          findings: mobile?.failedAccessibility.length
+            ? mobile.failedAccessibility.map((a) => ({ severity: sevFromScore((a.score ?? 0) * 100), title: a.title, detail: a.description?.slice(0, 220) ?? "", impact: "Affects users with assistive tech." }))
+            : [{ severity: "info" as const, title: "No Lighthouse accessibility failures detected", detail: `Live accessibility score ${liveScores.accessibility}/100.`, impact: "Good baseline." }],
         },
         {
           name: "Mobile" as const,
           findings: [
             { severity: seo.viewport ? "info" : "critical", title: seo.viewport ? "Viewport meta present" : "Missing viewport meta", detail: seo.viewport ?? "Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">", impact: seo.viewport ? "Page is mobile-render-ready." : "Page won't scale on mobile devices." },
-            { severity: sevFromScore(psiMobile.scores.performance), title: `Mobile Lighthouse performance: ${psiMobile.scores.performance}/100`, detail: `LCP ${psiMobile.metrics.lcp ?? "?"} · TBT ${psiMobile.metrics.tbt ?? "?"}`, impact: "Mobile-first indexing makes this the primary signal." },
+            { severity: sevFromScore(liveScores.mobile), title: `Mobile readiness score: ${liveScores.mobile}/100`, detail: mobile ? `Lighthouse ${mobile.scores.performance}/100 · LCP ${mobile.metrics.lcp ?? "?"} · TBT ${mobile.metrics.tbt ?? "?"}` : `Viewport ${seo.viewport ? "present" : "missing"} · HTML ${Math.round(probe.bytes / 1024)} KB · TTFB ${probe.ttfbMs} ms`, impact: "Mobile-first indexing makes this the primary signal." },
             ...(desktop ? [{ severity: sevFromScore(desktop.scores.performance), title: `Desktop performance: ${desktop.scores.performance}/100`, detail: `LCP ${desktop.metrics.lcp ?? "?"} · TBT ${desktop.metrics.tbt ?? "?"}`, impact: "Desktop benchmark for comparison." }] : []),
           ],
         },
         { name: "Broken Links" as const, findings: buildBrokenLinkFindings(linkChecks) },
       ],
-      recommendations: buildRecommendations(psiMobile, seo, brokenCount),
+      recommendations: buildRecommendations(mobile, seo, brokenCount, page, liveScores),
     };
 
     return {
@@ -495,7 +652,7 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       url: probe.finalUrl,
       audit,
       lighthouse: {
-        mobile: psiMobile,
+        mobile,
         desktop,
       },
       probe: {
