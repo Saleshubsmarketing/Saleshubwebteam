@@ -554,9 +554,13 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       return { ok: false as const, error: `${url} returned ${probe.contentType || "non-HTML content"} — only HTML pages can be audited.` };
     if (probe.html.length < 200)
       return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes).` };
+    if (/domain for sale|parked free|coming soon|placeholder|this domain is for sale/i.test(probe.html)) {
+      return { ok: false as const, error: `${url} is not a live website yet — it appears parked, placeholder, or coming soon.` };
+    }
 
     // 2. Real on-page SEO signals
     const seo = extractSeoSignals(probe.html, probe.finalUrl);
+    const page = extractPageSignals(probe.html, probe.finalUrl, probe.headers);
 
     // 3. Real Lighthouse audit via Google PageSpeed Insights + robots/sitemap + broken-link sample (parallel)
     const origin = new URL(probe.finalUrl).origin;
@@ -573,17 +577,18 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
 
     const desktop = "error" in psiDesktop ? null : psiDesktop;
     const brokenCount = linkChecks.filter((l) => !l.ok).length;
+    const liveScores = computeLiveScores(probe, seo, page, brokenCount, robots, sitemap);
 
     // 4. Build the dashboard from REAL data only
     const audit = {
-      summary: `Lighthouse: Performance ${psiMobile.scores.performance}/100 · SEO ${psiMobile.scores.seo}/100 · Accessibility ${psiMobile.scores.accessibility}/100 · Best Practices ${psiMobile.scores.bestPractices}/100 (mobile). LCP ${psiMobile.metrics.lcp ?? "?"}, CLS ${psiMobile.metrics.cls ?? "?"}, TBT ${psiMobile.metrics.tbt ?? "?"}. ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} in sample of ${linkChecks.length}.`,
+      summary: `Live scan of ${new URL(probe.finalUrl).hostname}: HTTP ${probe.status}, TTFB ${probe.ttfbMs} ms, total load sample ${probe.totalMs} ms, page weight ${Math.round(probe.bytes / 1024)} KB. Google Lighthouse mobile scored Performance ${psiMobile.scores.performance}/100, SEO ${psiMobile.scores.seo}/100, Accessibility ${psiMobile.scores.accessibility}/100, Best Practices ${psiMobile.scores.bestPractices}/100. ${brokenCount} broken link${brokenCount === 1 ? "" : "s"} found in a sample of ${linkChecks.length}.`,
       scores: {
-        performance: psiMobile.scores.performance,
-        seo: psiMobile.scores.seo,
-        mobile: psiMobile.scores.performance, // mobile-strategy Lighthouse score
-        ux: Math.round((psiMobile.scores.performance + psiMobile.scores.accessibility) / 2),
-        conversion: Math.max(0, Math.min(100, psiMobile.scores.performance - brokenCount * 5 - (seo.metaDesc ? 0 : 10) - (seo.h1Count === 1 ? 0 : 8))),
-        accessibility: psiMobile.scores.accessibility,
+        performance: liveScores.performance,
+        seo: liveScores.seo,
+        mobile: liveScores.mobile,
+        ux: liveScores.ux,
+        conversion: liveScores.conversion,
+        accessibility: liveScores.accessibility,
       },
       categories: [
         { name: "Performance" as const, findings: buildPerfFindings(psiMobile, probe.totalMs, probe.bytes) },
@@ -592,13 +597,13 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
           name: "Accessibility" as const,
           findings: psiMobile.failedAccessibility.length
             ? psiMobile.failedAccessibility.map((a) => ({ severity: sevFromScore((a.score ?? 0) * 100), title: a.title, detail: a.description?.slice(0, 220) ?? "", impact: "Affects users with assistive tech." }))
-            : [{ severity: "info" as const, title: "No accessibility failures from Lighthouse", detail: `Score ${psiMobile.scores.accessibility}/100.`, impact: "Good baseline." }],
+            : [{ severity: "info" as const, title: "No Lighthouse accessibility failures detected", detail: `Live accessibility score ${liveScores.accessibility}/100.`, impact: "Good baseline." }],
         },
         {
           name: "Mobile" as const,
           findings: [
             { severity: seo.viewport ? "info" : "critical", title: seo.viewport ? "Viewport meta present" : "Missing viewport meta", detail: seo.viewport ?? "Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">", impact: seo.viewport ? "Page is mobile-render-ready." : "Page won't scale on mobile devices." },
-            { severity: sevFromScore(psiMobile.scores.performance), title: `Mobile Lighthouse performance: ${psiMobile.scores.performance}/100`, detail: `LCP ${psiMobile.metrics.lcp ?? "?"} · TBT ${psiMobile.metrics.tbt ?? "?"}`, impact: "Mobile-first indexing makes this the primary signal." },
+            { severity: sevFromScore(liveScores.mobile), title: `Mobile readiness score: ${liveScores.mobile}/100`, detail: `Lighthouse ${psiMobile.scores.performance}/100 · LCP ${psiMobile.metrics.lcp ?? "?"} · TBT ${psiMobile.metrics.tbt ?? "?"}`, impact: "Mobile-first indexing makes this the primary signal." },
             ...(desktop ? [{ severity: sevFromScore(desktop.scores.performance), title: `Desktop performance: ${desktop.scores.performance}/100`, detail: `LCP ${desktop.metrics.lcp ?? "?"} · TBT ${desktop.metrics.tbt ?? "?"}`, impact: "Desktop benchmark for comparison." }] : []),
           ],
         },
