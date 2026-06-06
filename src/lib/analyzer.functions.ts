@@ -584,7 +584,11 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       return { ok: false as const, error: `${url} returned ${probe.contentType || "non-HTML content"} — only HTML pages can be audited.` };
     if (probe.html.length < 200)
       return { ok: false as const, error: `${url} returned a near-empty response (${probe.html.length} bytes).` };
-    if (/domain for sale|parked free|coming soon|placeholder|this domain is for sale/i.test(probe.html)) {
+    const pageText = stripMarkup(probe.html).toLowerCase();
+    if (
+      pageText.length < 400
+      && /(domain for sale|parked free|coming soon|under construction|this domain is for sale|buy this domain)/i.test(pageText)
+    ) {
       return { ok: false as const, error: `${url} is not a live website yet — it appears parked, placeholder, or coming soon.` };
     }
 
