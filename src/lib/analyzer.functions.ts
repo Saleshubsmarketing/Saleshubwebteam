@@ -462,13 +462,15 @@ function buildSeoFindings(seo: ReturnType<typeof extractSeoSignals>, robots: { o
   return out;
 }
 
-function buildPerfFindings(psi: PsiResult, probeMs: number, bytes: number): Finding[] {
+function buildPerfFindings(psi: PsiResult | null, probeMs: number, bytes: number, page: PageSignals, livePerformance: number): Finding[] {
   const out: Finding[] = [];
   out.push({
-    severity: sevFromScore(psi.scores.performance),
-    title: `Lighthouse performance score: ${psi.scores.performance}/100`,
-    detail: `LCP ${psi.metrics.lcp ?? "?"} · CLS ${psi.metrics.cls ?? "?"} · TBT ${psi.metrics.tbt ?? "?"} · FCP ${psi.metrics.fcp ?? "?"} · SI ${psi.metrics.si ?? "?"}`,
-    impact: psi.scores.performance < 50 ? "Critical: poor Core Web Vitals reduce SEO rankings and conversion." : "Faster pages convert better and rank higher.",
+    severity: sevFromScore(livePerformance),
+    title: psi ? `Lighthouse performance score: ${psi.scores.performance}/100` : `Live performance score: ${livePerformance}/100`,
+    detail: psi
+      ? `LCP ${psi.metrics.lcp ?? "?"} · CLS ${psi.metrics.cls ?? "?"} · TBT ${psi.metrics.tbt ?? "?"} · FCP ${psi.metrics.fcp ?? "?"} · SI ${psi.metrics.si ?? "?"}`
+      : `TTFB ${probeMs} ms · HTML ${Math.round(bytes / 1024)} KB · Compression ${page.hasCompression ? "on" : "off"} · Cache hints ${page.hasCacheHints ? "present" : "missing"}`,
+    impact: livePerformance < 50 ? "Critical: poor speed signals reduce SEO rankings and conversion." : "Faster pages convert better and rank higher.",
   });
   out.push({
     severity: probeMs > 2000 ? "warning" : "info",
@@ -476,6 +478,23 @@ function buildPerfFindings(psi: PsiResult, probeMs: number, bytes: number): Find
     detail: `Total response measured at ${probeMs} ms · ${Math.round(bytes / 1024)} KB transferred.`,
     impact: probeMs > 2000 ? "Slow server response delays everything downstream." : "Server response is healthy.",
   });
+  if (!psi) {
+    out.push({
+      severity: page.hasCompression ? "info" : "warning",
+      title: page.hasCompression ? "Compression detected" : "Compression missing",
+      detail: page.hasCompression ? "The server sends compressed responses." : "Enable gzip or Brotli on HTML responses.",
+      impact: page.hasCompression ? "Helps transfer performance." : "Inflates transfer size and slows mobile loads.",
+    });
+    if (!page.hasCacheHints) {
+      out.push({
+        severity: "warning",
+        title: "Cache-control hints missing",
+        detail: "Response headers do not expose strong browser caching hints.",
+        impact: "Repeat visits may remain slower than necessary.",
+      });
+    }
+    return out;
+  }
   for (const o of psi.opportunities.slice(0, 4)) {
     out.push({
       severity: (o.score ?? 1) < 0.5 ? "critical" : "warning",
@@ -500,9 +519,11 @@ function buildBrokenLinkFindings(checks: { url: string; status: number; ok: bool
 }
 
 function buildRecommendations(
-  psi: PsiResult,
+  psi: PsiResult | null,
   seo: ReturnType<typeof extractSeoSignals>,
   broken: number,
+  page: PageSignals,
+  liveScores: ReturnType<typeof computeLiveScores>,
 ): Recommendation[] {
   const recs: Recommendation[] = [];
   if (!seo.title || seo.titleLen < 20 || seo.titleLen > 65)
@@ -517,16 +538,25 @@ function buildRecommendations(
     recs.push({ priority: "medium", title: "Add a canonical tag", detail: "Prevent duplicate-content penalties across URL variants.", effort: "low" });
   if (broken > 0)
     recs.push({ priority: "high", title: `Fix ${broken} broken internal link${broken === 1 ? "" : "s"}`, detail: "Repair or remove dead links to recover lost authority and trust.", effort: "low" });
-  for (const o of psi.opportunities.slice(0, 4)) {
-    recs.push({
-      priority: (o.score ?? 1) < 0.5 ? "high" : "medium",
-      title: o.title,
-      detail: (o.displayValue ? `${o.displayValue}. ` : "") + "From Google Lighthouse opportunities.",
-      effort: "medium",
-    });
+  if (psi) {
+    for (const o of psi.opportunities.slice(0, 4)) {
+      recs.push({
+        priority: (o.score ?? 1) < 0.5 ? "high" : "medium",
+        title: o.title,
+        detail: (o.displayValue ? `${o.displayValue}. ` : "") + "From Google Lighthouse opportunities.",
+        effort: "medium",
+      });
+    }
+  } else {
+    if (!page.hasCompression) {
+      recs.push({ priority: "high", title: "Enable Brotli or gzip compression", detail: "The live scan did not detect compressed HTML delivery from the server.", effort: "medium" });
+    }
+    if (!page.hasCacheHints) {
+      recs.push({ priority: "medium", title: "Add browser caching headers", detail: "Set cache-control headers for HTML and static assets to speed up repeat visits.", effort: "medium" });
+    }
   }
-  if (psi.scores.accessibility < 90)
-    recs.push({ priority: psi.scores.accessibility < 60 ? "high" : "medium", title: `Improve accessibility (${psi.scores.accessibility}/100)`, detail: "Address Lighthouse accessibility failures — alt text, color contrast, ARIA, labels.", effort: "medium" });
+  if (liveScores.accessibility < 90)
+    recs.push({ priority: liveScores.accessibility < 60 ? "high" : "medium", title: `Improve accessibility (${liveScores.accessibility}/100)`, detail: psi ? "Address Lighthouse accessibility failures — alt text, color contrast, ARIA, labels." : "Fix missing alt text, heading structure, language tags, and mobile viewport issues found in the live crawl.", effort: "medium" });
   if (!seo.hasJsonLd)
     recs.push({ priority: "low", title: "Add structured data (JSON-LD)", detail: "Mark up Product, Organization, BreadcrumbList for rich results.", effort: "medium" });
   return recs.slice(0, 10);
