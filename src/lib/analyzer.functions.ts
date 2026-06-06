@@ -308,29 +308,16 @@ type PsiResult = {
 };
 
 async function runPsi(url: string, strategy: PsiStrategy): Promise<PsiResult | { error: string }> {
-  const key = process.env.PAGESPEED_API_KEY;
-  const params = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     url,
     strategy,
     category: "performance",
   });
-  // PSI supports repeated `category` params
   const extraCats = ["accessibility", "best-practices", "seo"];
-  let qs = params.toString();
-  for (const c of extraCats) qs += `&category=${encodeURIComponent(c)}`;
-  if (key) qs += `&key=${encodeURIComponent(key)}`;
+  let baseQs = baseParams.toString();
+  for (const c of extraCats) baseQs += `&category=${encodeURIComponent(c)}`;
 
-  const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${qs}`;
-
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 90_000);
-  try {
-    const res = await fetch(endpoint, { signal: ctrl.signal });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return { error: `PageSpeed API ${res.status}: ${body.slice(0, 200)}` };
-    }
-    const data = (await res.json()) as any;
+  const parseResponse = async (data: any): Promise<PsiResult | { error: string }> => {
     const lh = data?.lighthouseResult;
     if (!lh) return { error: "PageSpeed returned no Lighthouse result." };
     const cats = lh.categories ?? {};
@@ -389,6 +376,38 @@ async function runPsi(url: string, strategy: PsiStrategy): Promise<PsiResult | {
       failedSeo: failedFrom("seo"),
       failedBestPractices: failedFrom("best-practices"),
     };
+  };
+
+  const key = process.env.PAGESPEED_API_KEY?.trim();
+  const attempts = [key ? `${baseQs}&key=${encodeURIComponent(key)}` : null, baseQs].filter(
+    (value, index, arr): value is string => !!value && arr.indexOf(value) === index,
+  );
+
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 90_000);
+  try {
+    let lastError = "PageSpeed request failed.";
+    for (const query of attempts) {
+      const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${query}`;
+      const res = await fetch(endpoint, { signal: ctrl.signal });
+      if (res.ok) {
+        const data = (await res.json()) as any;
+        return parseResponse(data);
+      }
+
+      const body = await res.text().catch(() => "");
+      const normalized = body.slice(0, 400);
+      if (res.status === 403 && /has not been used|disabled|API key not valid/i.test(normalized)) {
+        lastError = `PageSpeed API key rejected (${res.status}).`;
+        continue;
+      }
+      if (res.status === 429) {
+        lastError = "Google PageSpeed rate limit reached. Try again in a minute.";
+        continue;
+      }
+      return { error: `PageSpeed API ${res.status}: ${normalized.slice(0, 200)}` };
+    }
+    return { error: lastError };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     return { error: /AbortError/i.test(msg) ? "PageSpeed timed out (90s)." : msg };
