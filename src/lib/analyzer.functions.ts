@@ -176,6 +176,104 @@ async function checkUrlStatus(url: string, timeoutMs = 6000) {
   }
 }
 
+type PageSignals = {
+  buttons: number;
+  forms: number;
+  inputs: number;
+  wordCount: number;
+  hasCompression: boolean;
+  hasCacheHints: boolean;
+  hasHttps: boolean;
+};
+
+function stripMarkup(html: string) {
+  return html
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractPageSignals(html: string, finalUrl: string, headers: Record<string, string>): PageSignals {
+  const text = stripMarkup(html);
+  return {
+    buttons: (html.match(/<button\b/gi) || []).length,
+    forms: (html.match(/<form\b/gi) || []).length,
+    inputs: (html.match(/<(input|textarea|select)\b/gi) || []).length,
+    wordCount: text ? text.split(/\s+/).filter(Boolean).length : 0,
+    hasCompression: /\b(br|gzip|deflate)\b/i.test(headers["content-encoding"] ?? ""),
+    hasCacheHints: /(max-age|s-maxage|public|stale-while-revalidate)/i.test(headers["cache-control"] ?? ""),
+    hasHttps: /^https:/i.test(finalUrl),
+  };
+}
+
+function clampScore(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function computeLiveScores(
+  probe: FetchProbe,
+  seo: ReturnType<typeof extractSeoSignals>,
+  page: PageSignals,
+  brokenCount: number,
+  robots: { ok: boolean; status: number },
+  sitemap: { ok: boolean; status: number },
+) {
+  const performance = clampScore(
+    100
+      - Math.max(0, Math.round((probe.ttfbMs - 600) / 30))
+      - Math.max(0, Math.round((probe.totalMs - 1800) / 50))
+      - Math.max(0, Math.round((probe.bytes - 300_000) / 60_000))
+      - (page.hasCompression ? 0 : 10)
+      - (page.hasCacheHints ? 0 : 6),
+  );
+
+  const seoScore = clampScore(
+    100
+      - (!seo.title ? 18 : 0)
+      - (seo.title && (seo.titleLen < 20 || seo.titleLen > 65) ? 6 : 0)
+      - (!seo.metaDesc ? 18 : 0)
+      - (seo.metaDesc && (seo.metaDescLen < 70 || seo.metaDescLen > 165) ? 6 : 0)
+      - (seo.h1Count === 0 ? 16 : seo.h1Count > 1 ? 8 : 0)
+      - (!seo.canonical ? 8 : 0)
+      - (!seo.viewport ? 14 : 0)
+      - (!seo.lang ? 6 : 0)
+      - (!seo.hasJsonLd ? 4 : 0)
+      - (!seo.ogTitle && !seo.ogImage ? 4 : 0)
+      - (!robots.ok ? 6 : 0)
+      - (!sitemap.ok ? 6 : 0),
+  );
+
+  const altPenalty = seo.imgs > 0 ? Math.round((seo.imgsMissingAlt / seo.imgs) * 40) : 0;
+  const accessibility = clampScore(
+    100 - (!seo.lang ? 10 : 0) - (!seo.viewport ? 15 : 0) - (seo.h1Count !== 1 ? 10 : 0) - altPenalty,
+  );
+
+  const mobile = clampScore(
+    performance * 0.65 + accessibility * 0.15 + (seo.viewport ? 20 : 0) - (probe.bytes > 1_500_000 ? 10 : 0),
+  );
+
+  const ux = clampScore(
+    performance * 0.4 + accessibility * 0.25 + seoScore * 0.2 + Math.max(0, 15 - brokenCount * 5),
+  );
+
+  const conversion = clampScore(
+    60 + (page.forms > 0 ? 12 : 0) + Math.min(page.buttons, 4) * 4 + (seo.metaDesc ? 6 : 0) + (page.hasHttps ? 6 : 0)
+      + (brokenCount === 0 ? 8 : -brokenCount * 6) + (page.wordCount < 150 ? -10 : 0) + (performance >= 70 ? 6 : performance < 50 ? -10 : 0),
+  );
+
+  return {
+    performance,
+    seo: seoScore,
+    mobile,
+    ux,
+    conversion,
+    accessibility,
+  };
+}
+
 /* -------- Google PageSpeed Insights (real Lighthouse) -------- */
 
 type PsiStrategy = "mobile" | "desktop";
