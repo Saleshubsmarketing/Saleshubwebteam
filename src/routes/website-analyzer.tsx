@@ -34,6 +34,13 @@ export const Route = createFileRoute("/website-analyzer")({
   component: AnalyzerPage,
 });
 
+type AuditResult = {
+  audit: Audit;
+  url: string;
+  fallback: boolean;
+  lighthouse: { mobile: LighthouseSide | null; desktop: any };
+};
+
 function AnalyzerPage() {
   const analyze = useServerFn(analyzeWebsite);
   const [url, setUrl] = useState("");
@@ -42,6 +49,7 @@ function AnalyzerPage() {
   const [audit, setAudit] = useState<Audit | null>(null);
   const [scannedUrl, setScannedUrl] = useState<string | null>(null);
   const [cwv, setCwv] = useState<LighthouseSide | null>(null);
+  const [fallback, setFallback] = useState(false);
   const [progressMsg, setProgressMsg] = useState("Validating URL…");
 
   useEffect(() => {
@@ -65,24 +73,48 @@ function AnalyzerPage() {
     return () => clearInterval(id);
   }, [running]);
 
-  const run = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const applyResult = (res: AuditResult) => {
+    setAudit(res.audit);
+    setScannedUrl(res.url);
+    setCwv(res.lighthouse?.mobile ?? null);
+    setFallback(res.fallback ?? false);
+  };
+
+  const run = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!url.trim()) return;
     setRunning(true);
     setError(null);
     setAudit(null);
     setCwv(null);
+    setFallback(false);
     try {
       const res = await analyze({ data: { url } });
       if (res.ok) {
-        setAudit(res.audit as Audit);
-        setScannedUrl(res.url);
-        setCwv((res as any).lighthouse?.mobile ?? null);
+        applyResult(res as unknown as AuditResult);
       } else {
         setError(res.error);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Audit failed.");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!scannedUrl) return;
+    setRunning(true);
+    setError(null);
+    try {
+      const res = await analyze({ data: { url: scannedUrl } });
+      if (res.ok) {
+        applyResult(res as unknown as AuditResult);
+      } else {
+        setError(res.error);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Retry audit failed.");
     } finally {
       setRunning(false);
     }
