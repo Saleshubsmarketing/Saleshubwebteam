@@ -3,7 +3,7 @@ import { SiteLayout, PageHero } from "@/components/site/SiteLayout";
 import {
   Globe, Zap, CheckCircle2, Sparkles, AlertTriangle, AlertCircle,
   Download, Loader2, Gauge, Search, Smartphone, MousePointer2, Accessibility,
-  Link2, TrendingUp, ArrowRight,
+  Link2, TrendingUp, ArrowRight, RefreshCw,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
