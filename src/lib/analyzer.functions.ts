@@ -647,10 +647,12 @@ export const analyzeWebsite = createServerFn({ method: "POST" })
       recommendations: buildRecommendations(mobile, seo, brokenCount, page, liveScores),
     };
 
+    const fallback = !mobile;
     return {
       ok: true as const,
       url: probe.finalUrl,
       audit,
+      fallback,
       lighthouse: {
         mobile,
         desktop,
