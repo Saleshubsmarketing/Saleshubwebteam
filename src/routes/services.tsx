@@ -19,6 +19,8 @@ import {
   Zap,
   TrendingUp,
   BarChart3,
+  Store,
+  Package,
 } from "lucide-react";
 
 export const Route = createFileRoute("/services")({
@@ -165,6 +167,38 @@ const services = [
     ],
     tools: ["Meta Commerce", "TikTok Shop", "Pinterest API", "Feedonomics"],
     accent: "#22C55E",
+  },
+  {
+    icon: Store,
+    title: "WooCommerce Store Design",
+    short:
+      "Custom WordPress + WooCommerce storefronts built for performance and conversion.",
+    bullets: [
+      "Custom WooCommerce builds & migrations",
+      "Conversion-optimized product pages",
+      "Payment gateway & shipping setup",
+      "Speed & Core Web Vitals tuning",
+      "WPML multi-currency / multi-language",
+      "Subscriptions, bookings & memberships",
+    ],
+    tools: ["WordPress", "WooCommerce", "Elementor", "WPRocket", "Stripe"],
+    accent: "#9B5DE5",
+  },
+  {
+    icon: Package,
+    title: "Dropshipping",
+    short:
+      "End-to-end dropshipping stores with winning products, suppliers and automated fulfillment.",
+    bullets: [
+      "Winning product research & validation",
+      "Supplier sourcing (CJ, Zendrop, Spocket)",
+      "Branded store build & niche positioning",
+      "Automated order fulfillment workflows",
+      "Tracking, returns & customer support",
+      "Paid traffic & creative for scale",
+    ],
+    tools: ["DSers", "CJ Dropshipping", "Zendrop", "Spocket", "AutoDS"],
+    accent: "#F472B6",
   },
 ];
 
