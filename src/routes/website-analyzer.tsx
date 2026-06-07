@@ -106,6 +106,9 @@ function AnalyzerPage() {
     if (!scannedUrl) return;
     setRunning(true);
     setError(null);
+    setAudit(null);
+    setCwv(null);
+    setFallback(false);
     try {
       const res = await analyze({ data: { url: scannedUrl } });
       if (res.ok) {
