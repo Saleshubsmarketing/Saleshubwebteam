@@ -3,7 +3,7 @@ import { SiteLayout, PageHero } from "@/components/site/SiteLayout";
 import {
   Globe, Zap, CheckCircle2, Sparkles, AlertTriangle, AlertCircle,
   Download, Loader2, Gauge, Search, Smartphone, MousePointer2, Accessibility,
-  Link2, TrendingUp, ArrowRight,
+  Link2, TrendingUp, ArrowRight, RefreshCw,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
@@ -34,6 +34,13 @@ export const Route = createFileRoute("/website-analyzer")({
   component: AnalyzerPage,
 });
 
+type AuditResult = {
+  audit: Audit;
+  url: string;
+  fallback: boolean;
+  lighthouse: { mobile: LighthouseSide | null; desktop: any };
+};
+
 function AnalyzerPage() {
   const analyze = useServerFn(analyzeWebsite);
   const [url, setUrl] = useState("");
@@ -42,6 +49,7 @@ function AnalyzerPage() {
   const [audit, setAudit] = useState<Audit | null>(null);
   const [scannedUrl, setScannedUrl] = useState<string | null>(null);
   const [cwv, setCwv] = useState<LighthouseSide | null>(null);
+  const [fallback, setFallback] = useState(false);
   const [progressMsg, setProgressMsg] = useState("Validating URL…");
 
   useEffect(() => {
@@ -65,24 +73,51 @@ function AnalyzerPage() {
     return () => clearInterval(id);
   }, [running]);
 
-  const run = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const applyResult = (res: AuditResult) => {
+    setAudit(res.audit);
+    setScannedUrl(res.url);
+    setCwv(res.lighthouse?.mobile ?? null);
+    setFallback(res.fallback ?? false);
+  };
+
+  const run = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!url.trim()) return;
     setRunning(true);
     setError(null);
     setAudit(null);
     setCwv(null);
+    setFallback(false);
     try {
       const res = await analyze({ data: { url } });
       if (res.ok) {
-        setAudit(res.audit as Audit);
-        setScannedUrl(res.url);
-        setCwv((res as any).lighthouse?.mobile ?? null);
+        applyResult(res as unknown as AuditResult);
       } else {
         setError(res.error);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Audit failed.");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!scannedUrl) return;
+    setRunning(true);
+    setError(null);
+    setAudit(null);
+    setCwv(null);
+    setFallback(false);
+    try {
+      const res = await analyze({ data: { url: scannedUrl } });
+      if (res.ok) {
+        applyResult(res as unknown as AuditResult);
+      } else {
+        setError(res.error);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Retry audit failed.");
     } finally {
       setRunning(false);
     }
@@ -159,11 +194,41 @@ function AnalyzerPage() {
                 initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                 className="mt-6 space-y-4"
               >
+                {fallback && (
+                  <div className="glass rounded-2xl p-4 text-sm flex items-start gap-3 border-yellow-500/20 bg-yellow-500/5">
+                    <AlertTriangle className="w-4 h-4 text-yellow-400 mt-0.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium text-yellow-200">Google Lighthouse temporarily unavailable</p>
+                      <p className="text-muted-foreground mt-0.5">
+                        Results are based on live crawl and header analysis only. Retry in a minute to get full Lighthouse Core Web Vitals.
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleRetry}
+                      disabled={running}
+                      className="shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/10 hover:bg-yellow-500/20 border border-yellow-500/20 text-yellow-200 text-xs font-medium disabled:opacity-50"
+                    >
+                      {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                      {running ? "Retrying…" : "Retry"}
+                    </button>
+                  </div>
+                )}
+
                 {cwv && (
                   <div className="glass rounded-2xl p-5">
-                    <p className="text-sm font-medium mb-3 flex items-center gap-2">
-                      <Gauge className="w-4 h-4 text-[var(--brand-cyan)]" /> Core Web Vitals (Google Lighthouse · Mobile)
-                    </p>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-medium flex items-center gap-2">
+                        <Gauge className="w-4 h-4 text-[var(--brand-cyan)]" /> Core Web Vitals (Google Lighthouse · Mobile)
+                      </p>
+                      <button
+                        onClick={handleRetry}
+                        disabled={running}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg glass-strong hover:bg-white/10 text-xs font-medium disabled:opacity-50"
+                      >
+                        {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                        {running ? "Retrying…" : "Retry live audit"}
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                       {[
                         { k: "LCP", v: cwv.metrics.lcp },
