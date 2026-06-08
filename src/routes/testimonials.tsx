@@ -5,7 +5,7 @@ import { Star, BadgeCheck } from "lucide-react";
 export const Route = createFileRoute("/testimonials")({
   head: () => ({
     meta: [
-      { title: "Testimonials — What Founders Say | NovaCommerce" },
+      { title: "Testimonials — What Founders Say | SaleshubsWebTeam" },
       { name: "description", content: "Verified reviews from Shopify founders and CMOs we've scaled." },
     ],
   }),

@@ -73,9 +73,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "NovaCommerce — Elite Shopify Growth Agency" },
+      { title: "SaleshubsWebTeam — Elite Shopify Growth Agency" },
       { name: "description", content: "Premium design, CRO, SEO, email and paid ad systems engineered to scale Shopify brands." },
-      { name: "author", content: "NovaCommerce" },
+      { name: "author", content: "SaleshubsWebTeam" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },

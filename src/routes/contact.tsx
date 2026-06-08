@@ -10,7 +10,7 @@ import { contactSchema, type ContactValues, revenueBands } from "@/lib/lead-sche
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — NovaCommerce" },
+      { title: "Contact — SaleshubsWebTeam" },
       {
         name: "description",
         content:

@@ -13,7 +13,7 @@ import { semrushDomainSnapshot } from "@/lib/semrush.functions";
 export const Route = createFileRoute("/traffic-checker")({
   head: () => ({
     meta: [
-      { title: "Traffic Checker — Estimate Any Domain | NovaCommerce" },
+      { title: "Traffic Checker — Estimate Any Domain | SaleshubsWebTeam" },
       { name: "description", content: "Estimate organic traffic, top keywords, backlinks and domain authority for any site." },
     ],
   }),

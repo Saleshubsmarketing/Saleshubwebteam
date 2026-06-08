@@ -5,7 +5,7 @@ import { ArrowRight, TrendingUp } from "lucide-react";
 export const Route = createFileRoute("/case-studies")({
   head: () => ({
     meta: [
-      { title: "Case Studies — Shopify Growth Wins | NovaCommerce" },
+      { title: "Case Studies — Shopify Growth Wins | SaleshubsWebTeam" },
       { name: "description", content: "Real Shopify brands. Real transformations. Conversion lifts, ROAS gains and email revenue growth." },
     ],
   }),

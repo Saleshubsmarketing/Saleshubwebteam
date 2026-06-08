@@ -5,7 +5,7 @@ import { Search, Link as LinkIcon, FileText, Hash } from "lucide-react";
 export const Route = createFileRoute("/seo-analyzer")({
   head: () => ({
     meta: [
-      { title: "Free SEO Analyzer | NovaCommerce" },
+      { title: "Free SEO Analyzer | SaleshubsWebTeam" },
       { name: "description", content: "Scan your site for SEO health: on-page, technical, schema, content gaps and backlink opportunities." },
     ],
   }),

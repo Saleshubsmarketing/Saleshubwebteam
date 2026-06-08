@@ -11,9 +11,9 @@ import { SiteLayout } from "@/components/site/SiteLayout";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "NovaCommerce — Scale Shopify Brands with CRO, SEO & Marketing Systems" },
+      { title: "SaleshubsWebTeam — Scale Shopify Brands with CRO, SEO & Marketing Systems" },
       { name: "description", content: "Elite eCommerce growth agency for Shopify brands. Design, conversion optimization, email marketing, SEO, paid ads, funnels and Shopify management." },
-      { property: "og:title", content: "NovaCommerce — Elite Shopify Growth Agency" },
+      { property: "og:title", content: "SaleshubsWebTeam — Elite Shopify Growth Agency" },
       { property: "og:description", content: "Premium design, CRO, SEO, email and paid ad systems engineered to scale Shopify brands." },
     ],
   }),
