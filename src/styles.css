@@ -63,62 +63,62 @@
 
 :root {
   --radius: 0.625rem;
-  /* Deep cosmic dark theme — premium SaaS / Shopify Plus agency */
-  --background: oklch(0.16 0.04 270);          /* #0F172A-ish */
+  /* Warm sunset dark theme — SaleshubsWebTeam */
+  --background: oklch(0.17 0.03 230);          /* deep teal-navy */
   --foreground: oklch(0.98 0.005 240);
-  --card: oklch(0.21 0.04 268 / 0.6);
+  --card: oklch(0.22 0.03 225 / 0.6);
   --card-foreground: oklch(0.98 0.005 240);
-  --popover: oklch(0.18 0.04 268);
+  --popover: oklch(0.19 0.03 225);
   --popover-foreground: oklch(0.98 0.005 240);
-  --primary: oklch(0.66 0.21 285);             /* #7B61FF */
+  --primary: oklch(0.7 0.19 35);               /* coral #FF6B4A */
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.78 0.16 220);           /* #00D4FF cyan */
-  --secondary-foreground: oklch(0.12 0.03 270);
-  --muted: oklch(0.26 0.03 265);
-  --muted-foreground: oklch(0.72 0.02 250);
-  --accent: oklch(0.82 0.22 155);              /* #14F195 neon green */
-  --accent-foreground: oklch(0.14 0.04 270);
+  --secondary: oklch(0.78 0.13 195);           /* teal #2DD4BF */
+  --secondary-foreground: oklch(0.14 0.03 225);
+  --muted: oklch(0.26 0.02 225);
+  --muted-foreground: oklch(0.74 0.02 220);
+  --accent: oklch(0.83 0.16 80);               /* gold #FBBF24 */
+  --accent-foreground: oklch(0.16 0.03 225);
   --destructive: oklch(0.65 0.24 25);
   --destructive-foreground: oklch(0.99 0 0);
   --border: oklch(1 0 0 / 0.08);
   --input: oklch(1 0 0 / 0.1);
-  --ring: oklch(0.7 0.18 285);
+  --ring: oklch(0.72 0.17 40);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.18 0.04 268);
+  --sidebar: oklch(0.19 0.03 225);
   --sidebar-foreground: oklch(0.98 0.005 240);
-  --sidebar-primary: oklch(0.66 0.21 285);
+  --sidebar-primary: oklch(0.7 0.19 35);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.26 0.03 265);
+  --sidebar-accent: oklch(0.26 0.02 225);
   --sidebar-accent-foreground: oklch(0.98 0.005 240);
   --sidebar-border: oklch(1 0 0 / 0.08);
-  --sidebar-ring: oklch(0.7 0.18 285);
+  --sidebar-ring: oklch(0.72 0.17 40);
 
   /* Brand-specific tokens */
-  --brand-violet: #7B61FF;
-  --brand-indigo: #6C63FF;
-  --brand-purple: #8B5CF6;
-  --brand-cyan: #00D4FF;
-  --brand-teal: #06B6D4;
-  --brand-mint: #14F195;
-  --brand-green: #22C55E;
-  --bg-deep: #050816;
-  --bg-mid: #0F172A;
-  --bg-soft: #111827;
+  --brand-violet: #FF6B4A;
+  --brand-indigo: #FF8A5C;
+  --brand-purple: #F97316;
+  --brand-cyan: #2DD4BF;
+  --brand-teal: #14B8A6;
+  --brand-mint: #FBBF24;
+  --brand-green: #F59E0B;
+  --bg-deep: #0A1620;
+  --bg-mid: #11202E;
+  --bg-soft: #16293A;
 
-  --gradient-brand: linear-gradient(135deg, #7B61FF 0%, #6C63FF 40%, #00D4FF 100%);
-  --gradient-aurora: linear-gradient(135deg, #8B5CF6 0%, #00D4FF 50%, #14F195 100%);
-  --gradient-text: linear-gradient(120deg, #ffffff 0%, #c4b5fd 40%, #67e8f9 100%);
-  --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(123,97,255,0.25), transparent 60%),
-                   radial-gradient(ellipse 60% 50% at 90% 20%, rgba(0,212,255,0.18), transparent 60%),
-                   radial-gradient(ellipse 60% 50% at 10% 80%, rgba(20,241,149,0.12), transparent 60%);
+  --gradient-brand: linear-gradient(135deg, #FF6B4A 0%, #FB923C 45%, #FBBF24 100%);
+  --gradient-aurora: linear-gradient(135deg, #FF6B4A 0%, #FBBF24 50%, #2DD4BF 100%);
+  --gradient-text: linear-gradient(120deg, #ffffff 0%, #fed7aa 40%, #99f6e4 100%);
+  --gradient-hero: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,107,74,0.28), transparent 60%),
+                   radial-gradient(ellipse 60% 50% at 90% 20%, rgba(251,191,36,0.18), transparent 60%),
+                   radial-gradient(ellipse 60% 50% at 10% 80%, rgba(45,212,191,0.14), transparent 60%);
 
-  --shadow-glow-violet: 0 0 40px rgba(123,97,255,0.45), 0 0 80px rgba(123,97,255,0.2);
-  --shadow-glow-cyan: 0 0 40px rgba(0,212,255,0.4);
-  --shadow-glow-mint: 0 0 40px rgba(20,241,149,0.35);
+  --shadow-glow-violet: 0 0 40px rgba(255,107,74,0.45), 0 0 80px rgba(255,107,74,0.2);
+  --shadow-glow-cyan: 0 0 40px rgba(45,212,191,0.4);
+  --shadow-glow-mint: 0 0 40px rgba(251,191,36,0.4);
   --shadow-card: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
 }
 
@@ -165,9 +165,9 @@
   body {
     background: var(--bg-deep);
     background-image:
-      radial-gradient(ellipse 100% 60% at 50% -10%, rgba(123,97,255,0.18), transparent 70%),
-      radial-gradient(ellipse 80% 50% at 100% 30%, rgba(0,212,255,0.10), transparent 70%),
-      radial-gradient(ellipse 80% 50% at 0% 70%, rgba(20,241,149,0.06), transparent 70%);
+      radial-gradient(ellipse 100% 60% at 50% -10%, rgba(255,107,74,0.22), transparent 70%),
+      radial-gradient(ellipse 80% 50% at 100% 30%, rgba(251,191,36,0.10), transparent 70%),
+      radial-gradient(ellipse 80% 50% at 0% 70%, rgba(45,212,191,0.08), transparent 70%);
     background-attachment: fixed;
     color: var(--color-foreground);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -240,8 +240,8 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .input-glass:focus {
-  border-color: rgba(0,212,255,0.5);
-  box-shadow: 0 0 0 3px rgba(0,212,255,0.15);
+  border-color: rgba(255,138,92,0.55);
+  box-shadow: 0 0 0 3px rgba(255,138,92,0.18);
 }
 
 @keyframes float {
@@ -256,8 +256,8 @@
   to { transform: translateX(-50%); }
 }
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(123,97,255,0.4); }
-  50% { box-shadow: 0 0 40px rgba(123,97,255,0.7), 0 0 60px rgba(0,212,255,0.3); }
+  0%, 100% { box-shadow: 0 0 20px rgba(255,107,74,0.4); }
+  50% { box-shadow: 0 0 40px rgba(255,107,74,0.7), 0 0 60px rgba(251,191,36,0.3); }
 }
 .btn-glow {
   animation: pulse-glow 3s ease-in-out infinite;

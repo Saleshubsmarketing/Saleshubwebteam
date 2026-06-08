@@ -5,7 +5,7 @@ import { Users, Award, Globe2, Sparkles } from "lucide-react";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — NovaCommerce eCommerce Growth Agency" },
+      { title: "About — SaleshubsWebTeam eCommerce Growth Agency" },
       { name: "description", content: "We are a global team of Shopify experts, designers and growth operators helping eCommerce brands scale predictably." },
     ],
   }),
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/about")({
 function AboutPage() {
   return (
     <SiteLayout>
-      <PageHero eyebrow="About us" title={<>Built by operators. <span className="text-gradient">For operators.</span></>} subtitle="NovaCommerce is a remote, senior team of Shopify Plus designers, CRO strategists, email architects, paid ads buyers and SEO engineers." />
+      <PageHero eyebrow="About us" title={<>Built by operators. <span className="text-gradient">For operators.</span></>} subtitle="SaleshubsWebTeam is a remote, senior team of Shopify Plus designers, CRO strategists, email architects, paid ads buyers and SEO engineers." />
       <section className="pb-20">
         <div className="mx-auto max-w-5xl px-4 grid sm:grid-cols-3 gap-4">
           {[

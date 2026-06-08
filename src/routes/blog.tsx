@@ -6,7 +6,7 @@ import { Search, Clock } from "lucide-react";
 export const Route = createFileRoute("/blog")({
   head: () => ({
     meta: [
-      { title: "Blog — Shopify Growth Insights | NovaCommerce" },
+      { title: "Blog — Shopify Growth Insights | SaleshubsWebTeam" },
       { name: "description", content: "Playbooks on Shopify design, CRO, email marketing, SEO and paid ads — by operators who run them daily." },
     ],
   }),

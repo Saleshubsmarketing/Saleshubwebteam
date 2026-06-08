@@ -5,6 +5,7 @@ import { Menu, X, Sparkles } from "lucide-react";
 const links = [
   { to: "/", label: "Home" },
   { to: "/services", label: "Services" },
+  { to: "/portfolio", label: "Portfolio" },
   { to: "/case-studies", label: "Case Studies" },
   { to: "/website-analyzer", label: "Analyzer" },
   { to: "/pricing", label: "Pricing" },
@@ -43,7 +44,7 @@ export function Nav() {
               </div>
             </div>
             <span className="font-semibold tracking-tight text-lg">
-              Nova<span className="text-gradient-brand">Commerce</span>
+              Saleshubs<span className="text-gradient-brand">WebTeam</span>
             </span>
           </Link>
 
@@ -70,7 +71,7 @@ export function Nav() {
             </Link>
             <Link
               to="/book-call"
-              className="hidden sm:inline-flex text-sm px-4 py-2 rounded-lg bg-gradient-brand text-white font-medium hover:opacity-90 transition shadow-[0_0_24px_rgba(123,97,255,0.4)]"
+              className="hidden sm:inline-flex text-sm px-4 py-2 rounded-lg bg-gradient-brand text-white font-medium hover:opacity-90 transition shadow-[0_0_24px_rgba(255,107,74,0.45)]"
             >
               Book Call
             </Link>

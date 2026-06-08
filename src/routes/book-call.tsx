@@ -15,7 +15,7 @@ import {
 export const Route = createFileRoute("/book-call")({
   head: () => ({
     meta: [
-      { title: "Book a Strategy Call | NovaCommerce" },
+      { title: "Book a Strategy Call | SaleshubsWebTeam" },
       {
         name: "description",
         content:
