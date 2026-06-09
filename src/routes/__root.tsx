@@ -79,6 +79,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { property: "og:title", content: "SaleshubsWebTeam — Elite Shopify Growth Agency" },
+      { name: "twitter:title", content: "SaleshubsWebTeam — Elite Shopify Growth Agency" },
+      { property: "og:description", content: "Premium design, CRO, SEO, email and paid ad systems engineered to scale Shopify brands." },
+      { name: "twitter:description", content: "Premium design, CRO, SEO, email and paid ad systems engineered to scale Shopify brands." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4ba3996b-d7ac-4f0a-972a-fe4ec0b0a3b8" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/4ba3996b-d7ac-4f0a-972a-fe4ec0b0a3b8" },
     ],
     links: [
       {
