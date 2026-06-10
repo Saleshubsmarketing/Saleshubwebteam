@@ -16,6 +16,7 @@ import { Route as TestimonialsRouteImport } from './routes/testimonials'
 import { Route as ShopifyGraderRouteImport } from './routes/shopify-grader'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
+import { Route as RoiCalculatorRouteImport } from './routes/roi-calculator'
 import { Route as RevenueCalculatorRouteImport } from './routes/revenue-calculator'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
@@ -62,6 +63,11 @@ const ServicesRoute = ServicesRouteImport.update({
 const SeoAnalyzerRoute = SeoAnalyzerRouteImport.update({
   id: '/seo-analyzer',
   path: '/seo-analyzer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoiCalculatorRoute = RoiCalculatorRouteImport.update({
+  id: '/roi-calculator',
+  path: '/roi-calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RevenueCalculatorRoute = RevenueCalculatorRouteImport.update({
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
+  '/roi-calculator': typeof RoiCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
@@ -159,6 +166,7 @@ export interface FileRoutesByTo {
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
+  '/roi-calculator': typeof RoiCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
@@ -181,6 +189,7 @@ export interface FileRoutesById {
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
+  '/roi-calculator': typeof RoiCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
@@ -204,6 +213,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
+    | '/roi-calculator'
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
+    | '/roi-calculator'
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
+    | '/roi-calculator'
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
@@ -268,6 +280,7 @@ export interface RootRouteChildren {
   PortfolioRoute: typeof PortfolioRoute
   PricingRoute: typeof PricingRoute
   RevenueCalculatorRoute: typeof RevenueCalculatorRoute
+  RoiCalculatorRoute: typeof RoiCalculatorRoute
   SeoAnalyzerRoute: typeof SeoAnalyzerRoute
   ServicesRoute: typeof ServicesRoute
   ShopifyGraderRoute: typeof ShopifyGraderRoute
@@ -326,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/seo-analyzer'
       fullPath: '/seo-analyzer'
       preLoaderRoute: typeof SeoAnalyzerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roi-calculator': {
+      id: '/roi-calculator'
+      path: '/roi-calculator'
+      fullPath: '/roi-calculator'
+      preLoaderRoute: typeof RoiCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/revenue-calculator': {
@@ -428,6 +448,7 @@ const rootRouteChildren: RootRouteChildren = {
   PortfolioRoute: PortfolioRoute,
   PricingRoute: PricingRoute,
   RevenueCalculatorRoute: RevenueCalculatorRoute,
+  RoiCalculatorRoute: RoiCalculatorRoute,
   SeoAnalyzerRoute: SeoAnalyzerRoute,
   ServicesRoute: ServicesRoute,
   ShopifyGraderRoute: ShopifyGraderRoute,
