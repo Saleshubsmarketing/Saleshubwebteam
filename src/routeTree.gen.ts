@@ -11,16 +11,24 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WebsiteAnalyzerRouteImport } from './routes/website-analyzer'
 import { Route as TrafficCheckerRouteImport } from './routes/traffic-checker'
+import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as TestimonialsRouteImport } from './routes/testimonials'
+import { Route as ShopifyGraderRouteImport } from './routes/shopify-grader'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
+import { Route as RoiCalculatorRouteImport } from './routes/roi-calculator'
+import { Route as RevenueCalculatorRouteImport } from './routes/revenue-calculator'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as MarketingHealthScoreRouteImport } from './routes/marketing-health-score'
 import { Route as FreeAuditRouteImport } from './routes/free-audit'
+import { Route as ConversionAnalyzerRouteImport } from './routes/conversion-analyzer'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as CompetitorAnalyzerRouteImport } from './routes/competitor-analyzer'
 import { Route as CaseStudiesRouteImport } from './routes/case-studies'
 import { Route as BookCallRouteImport } from './routes/book-call'
 import { Route as BlogRouteImport } from './routes/blog'
+import { Route as AiGrowthAdvisorRouteImport } from './routes/ai-growth-advisor'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -34,9 +42,19 @@ const TrafficCheckerRoute = TrafficCheckerRouteImport.update({
   path: '/traffic-checker',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsRoute = ToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TestimonialsRoute = TestimonialsRouteImport.update({
   id: '/testimonials',
   path: '/testimonials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopifyGraderRoute = ShopifyGraderRouteImport.update({
+  id: '/shopify-grader',
+  path: '/shopify-grader',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesRoute = ServicesRouteImport.update({
@@ -49,6 +67,16 @@ const SeoAnalyzerRoute = SeoAnalyzerRouteImport.update({
   path: '/seo-analyzer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoiCalculatorRoute = RoiCalculatorRouteImport.update({
+  id: '/roi-calculator',
+  path: '/roi-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevenueCalculatorRoute = RevenueCalculatorRouteImport.update({
+  id: '/revenue-calculator',
+  path: '/revenue-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
@@ -59,14 +87,29 @@ const PortfolioRoute = PortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketingHealthScoreRoute = MarketingHealthScoreRouteImport.update({
+  id: '/marketing-health-score',
+  path: '/marketing-health-score',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FreeAuditRoute = FreeAuditRouteImport.update({
   id: '/free-audit',
   path: '/free-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConversionAnalyzerRoute = ConversionAnalyzerRouteImport.update({
+  id: '/conversion-analyzer',
+  path: '/conversion-analyzer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompetitorAnalyzerRoute = CompetitorAnalyzerRouteImport.update({
+  id: '/competitor-analyzer',
+  path: '/competitor-analyzer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CaseStudiesRoute = CaseStudiesRouteImport.update({
@@ -84,6 +127,11 @@ const BlogRoute = BlogRouteImport.update({
   path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiGrowthAdvisorRoute = AiGrowthAdvisorRouteImport.update({
+  id: '/ai-growth-advisor',
+  path: '/ai-growth-advisor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -98,32 +146,48 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/blog': typeof BlogRoute
   '/book-call': typeof BookCallRoute
   '/case-studies': typeof CaseStudiesRoute
+  '/competitor-analyzer': typeof CompetitorAnalyzerRoute
   '/contact': typeof ContactRoute
+  '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
+  '/marketing-health-score': typeof MarketingHealthScoreRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
+  '/revenue-calculator': typeof RevenueCalculatorRoute
+  '/roi-calculator': typeof RoiCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
+  '/shopify-grader': typeof ShopifyGraderRoute
   '/testimonials': typeof TestimonialsRoute
+  '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/blog': typeof BlogRoute
   '/book-call': typeof BookCallRoute
   '/case-studies': typeof CaseStudiesRoute
+  '/competitor-analyzer': typeof CompetitorAnalyzerRoute
   '/contact': typeof ContactRoute
+  '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
+  '/marketing-health-score': typeof MarketingHealthScoreRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
+  '/revenue-calculator': typeof RevenueCalculatorRoute
+  '/roi-calculator': typeof RoiCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
+  '/shopify-grader': typeof ShopifyGraderRoute
   '/testimonials': typeof TestimonialsRoute
+  '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
 }
@@ -131,16 +195,24 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/blog': typeof BlogRoute
   '/book-call': typeof BookCallRoute
   '/case-studies': typeof CaseStudiesRoute
+  '/competitor-analyzer': typeof CompetitorAnalyzerRoute
   '/contact': typeof ContactRoute
+  '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
+  '/marketing-health-score': typeof MarketingHealthScoreRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
+  '/revenue-calculator': typeof RevenueCalculatorRoute
+  '/roi-calculator': typeof RoiCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
+  '/shopify-grader': typeof ShopifyGraderRoute
   '/testimonials': typeof TestimonialsRoute
+  '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
 }
@@ -149,48 +221,72 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/ai-growth-advisor'
     | '/blog'
     | '/book-call'
     | '/case-studies'
+    | '/competitor-analyzer'
     | '/contact'
+    | '/conversion-analyzer'
     | '/free-audit'
+    | '/marketing-health-score'
     | '/portfolio'
     | '/pricing'
+    | '/revenue-calculator'
+    | '/roi-calculator'
     | '/seo-analyzer'
     | '/services'
+    | '/shopify-grader'
     | '/testimonials'
+    | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/ai-growth-advisor'
     | '/blog'
     | '/book-call'
     | '/case-studies'
+    | '/competitor-analyzer'
     | '/contact'
+    | '/conversion-analyzer'
     | '/free-audit'
+    | '/marketing-health-score'
     | '/portfolio'
     | '/pricing'
+    | '/revenue-calculator'
+    | '/roi-calculator'
     | '/seo-analyzer'
     | '/services'
+    | '/shopify-grader'
     | '/testimonials'
+    | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
   id:
     | '__root__'
     | '/'
     | '/about'
+    | '/ai-growth-advisor'
     | '/blog'
     | '/book-call'
     | '/case-studies'
+    | '/competitor-analyzer'
     | '/contact'
+    | '/conversion-analyzer'
     | '/free-audit'
+    | '/marketing-health-score'
     | '/portfolio'
     | '/pricing'
+    | '/revenue-calculator'
+    | '/roi-calculator'
     | '/seo-analyzer'
     | '/services'
+    | '/shopify-grader'
     | '/testimonials'
+    | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
   fileRoutesById: FileRoutesById
@@ -198,16 +294,24 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AiGrowthAdvisorRoute: typeof AiGrowthAdvisorRoute
   BlogRoute: typeof BlogRoute
   BookCallRoute: typeof BookCallRoute
   CaseStudiesRoute: typeof CaseStudiesRoute
+  CompetitorAnalyzerRoute: typeof CompetitorAnalyzerRoute
   ContactRoute: typeof ContactRoute
+  ConversionAnalyzerRoute: typeof ConversionAnalyzerRoute
   FreeAuditRoute: typeof FreeAuditRoute
+  MarketingHealthScoreRoute: typeof MarketingHealthScoreRoute
   PortfolioRoute: typeof PortfolioRoute
   PricingRoute: typeof PricingRoute
+  RevenueCalculatorRoute: typeof RevenueCalculatorRoute
+  RoiCalculatorRoute: typeof RoiCalculatorRoute
   SeoAnalyzerRoute: typeof SeoAnalyzerRoute
   ServicesRoute: typeof ServicesRoute
+  ShopifyGraderRoute: typeof ShopifyGraderRoute
   TestimonialsRoute: typeof TestimonialsRoute
+  ToolsRoute: typeof ToolsRoute
   TrafficCheckerRoute: typeof TrafficCheckerRoute
   WebsiteAnalyzerRoute: typeof WebsiteAnalyzerRoute
 }
@@ -228,11 +332,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TrafficCheckerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools': {
+      id: '/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof ToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/testimonials': {
       id: '/testimonials'
       path: '/testimonials'
       fullPath: '/testimonials'
       preLoaderRoute: typeof TestimonialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shopify-grader': {
+      id: '/shopify-grader'
+      path: '/shopify-grader'
+      fullPath: '/shopify-grader'
+      preLoaderRoute: typeof ShopifyGraderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services': {
@@ -249,6 +367,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SeoAnalyzerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/roi-calculator': {
+      id: '/roi-calculator'
+      path: '/roi-calculator'
+      fullPath: '/roi-calculator'
+      preLoaderRoute: typeof RoiCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revenue-calculator': {
+      id: '/revenue-calculator'
+      path: '/revenue-calculator'
+      fullPath: '/revenue-calculator'
+      preLoaderRoute: typeof RevenueCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
@@ -263,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/marketing-health-score': {
+      id: '/marketing-health-score'
+      path: '/marketing-health-score'
+      fullPath: '/marketing-health-score'
+      preLoaderRoute: typeof MarketingHealthScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/free-audit': {
       id: '/free-audit'
       path: '/free-audit'
@@ -270,11 +409,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FreeAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conversion-analyzer': {
+      id: '/conversion-analyzer'
+      path: '/conversion-analyzer'
+      fullPath: '/conversion-analyzer'
+      preLoaderRoute: typeof ConversionAnalyzerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/competitor-analyzer': {
+      id: '/competitor-analyzer'
+      path: '/competitor-analyzer'
+      fullPath: '/competitor-analyzer'
+      preLoaderRoute: typeof CompetitorAnalyzerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/case-studies': {
@@ -298,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-growth-advisor': {
+      id: '/ai-growth-advisor'
+      path: '/ai-growth-advisor'
+      fullPath: '/ai-growth-advisor'
+      preLoaderRoute: typeof AiGrowthAdvisorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -318,16 +478,24 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AiGrowthAdvisorRoute: AiGrowthAdvisorRoute,
   BlogRoute: BlogRoute,
   BookCallRoute: BookCallRoute,
   CaseStudiesRoute: CaseStudiesRoute,
+  CompetitorAnalyzerRoute: CompetitorAnalyzerRoute,
   ContactRoute: ContactRoute,
+  ConversionAnalyzerRoute: ConversionAnalyzerRoute,
   FreeAuditRoute: FreeAuditRoute,
+  MarketingHealthScoreRoute: MarketingHealthScoreRoute,
   PortfolioRoute: PortfolioRoute,
   PricingRoute: PricingRoute,
+  RevenueCalculatorRoute: RevenueCalculatorRoute,
+  RoiCalculatorRoute: RoiCalculatorRoute,
   SeoAnalyzerRoute: SeoAnalyzerRoute,
   ServicesRoute: ServicesRoute,
+  ShopifyGraderRoute: ShopifyGraderRoute,
   TestimonialsRoute: TestimonialsRoute,
+  ToolsRoute: ToolsRoute,
   TrafficCheckerRoute: TrafficCheckerRoute,
   WebsiteAnalyzerRoute: WebsiteAnalyzerRoute,
 }
