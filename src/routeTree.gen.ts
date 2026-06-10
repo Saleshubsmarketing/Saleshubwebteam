@@ -20,6 +20,7 @@ import { Route as RoiCalculatorRouteImport } from './routes/roi-calculator'
 import { Route as RevenueCalculatorRouteImport } from './routes/revenue-calculator'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as MarketingHealthScoreRouteImport } from './routes/marketing-health-score'
 import { Route as FreeAuditRouteImport } from './routes/free-audit'
 import { Route as ConversionAnalyzerRouteImport } from './routes/conversion-analyzer'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -86,6 +87,11 @@ const PortfolioRoute = PortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MarketingHealthScoreRoute = MarketingHealthScoreRouteImport.update({
+  id: '/marketing-health-score',
+  path: '/marketing-health-score',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FreeAuditRoute = FreeAuditRouteImport.update({
   id: '/free-audit',
   path: '/free-audit',
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
+  '/marketing-health-score': typeof MarketingHealthScoreRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
+  '/marketing-health-score': typeof MarketingHealthScoreRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
@@ -195,6 +203,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
+  '/marketing-health-score': typeof MarketingHealthScoreRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
@@ -220,6 +229,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/conversion-analyzer'
     | '/free-audit'
+    | '/marketing-health-score'
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
@@ -243,6 +253,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/conversion-analyzer'
     | '/free-audit'
+    | '/marketing-health-score'
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
@@ -266,6 +277,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/conversion-analyzer'
     | '/free-audit'
+    | '/marketing-health-score'
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
@@ -290,6 +302,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   ConversionAnalyzerRoute: typeof ConversionAnalyzerRoute
   FreeAuditRoute: typeof FreeAuditRoute
+  MarketingHealthScoreRoute: typeof MarketingHealthScoreRoute
   PortfolioRoute: typeof PortfolioRoute
   PricingRoute: typeof PricingRoute
   RevenueCalculatorRoute: typeof RevenueCalculatorRoute
@@ -382,6 +395,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/marketing-health-score': {
+      id: '/marketing-health-score'
+      path: '/marketing-health-score'
+      fullPath: '/marketing-health-score'
+      preLoaderRoute: typeof MarketingHealthScoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/free-audit': {
       id: '/free-audit'
       path: '/free-audit'
@@ -466,6 +486,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   ConversionAnalyzerRoute: ConversionAnalyzerRoute,
   FreeAuditRoute: FreeAuditRoute,
+  MarketingHealthScoreRoute: MarketingHealthScoreRoute,
   PortfolioRoute: PortfolioRoute,
   PricingRoute: PricingRoute,
   RevenueCalculatorRoute: RevenueCalculatorRoute,
