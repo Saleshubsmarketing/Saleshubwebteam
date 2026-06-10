@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WebsiteAnalyzerRouteImport } from './routes/website-analyzer'
 import { Route as TrafficCheckerRouteImport } from './routes/traffic-checker'
+import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as TestimonialsRouteImport } from './routes/testimonials'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
@@ -32,6 +33,11 @@ const WebsiteAnalyzerRoute = WebsiteAnalyzerRouteImport.update({
 const TrafficCheckerRoute = TrafficCheckerRouteImport.update({
   id: '/traffic-checker',
   path: '/traffic-checker',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsRoute = ToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TestimonialsRoute = TestimonialsRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/testimonials': typeof TestimonialsRoute
+  '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
 }
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/testimonials': typeof TestimonialsRoute
+  '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
 }
@@ -141,6 +149,7 @@ export interface FileRoutesById {
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/testimonials': typeof TestimonialsRoute
+  '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
 }
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/seo-analyzer'
     | '/services'
     | '/testimonials'
+    | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
   fileRoutesByTo: FileRoutesByTo
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/seo-analyzer'
     | '/services'
     | '/testimonials'
+    | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
   id:
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/seo-analyzer'
     | '/services'
     | '/testimonials'
+    | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
   fileRoutesById: FileRoutesById
@@ -208,6 +220,7 @@ export interface RootRouteChildren {
   SeoAnalyzerRoute: typeof SeoAnalyzerRoute
   ServicesRoute: typeof ServicesRoute
   TestimonialsRoute: typeof TestimonialsRoute
+  ToolsRoute: typeof ToolsRoute
   TrafficCheckerRoute: typeof TrafficCheckerRoute
   WebsiteAnalyzerRoute: typeof WebsiteAnalyzerRoute
 }
@@ -226,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/traffic-checker'
       fullPath: '/traffic-checker'
       preLoaderRoute: typeof TrafficCheckerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools': {
+      id: '/tools'
+      path: '/tools'
+      fullPath: '/tools'
+      preLoaderRoute: typeof ToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/testimonials': {
@@ -328,9 +348,20 @@ const rootRouteChildren: RootRouteChildren = {
   SeoAnalyzerRoute: SeoAnalyzerRoute,
   ServicesRoute: ServicesRoute,
   TestimonialsRoute: TestimonialsRoute,
+  ToolsRoute: ToolsRoute,
   TrafficCheckerRoute: TrafficCheckerRoute,
   WebsiteAnalyzerRoute: WebsiteAnalyzerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
