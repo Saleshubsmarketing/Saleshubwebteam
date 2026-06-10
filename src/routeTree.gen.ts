@@ -16,6 +16,7 @@ import { Route as TestimonialsRouteImport } from './routes/testimonials'
 import { Route as ShopifyGraderRouteImport } from './routes/shopify-grader'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
+import { Route as RevenueCalculatorRouteImport } from './routes/revenue-calculator'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as FreeAuditRouteImport } from './routes/free-audit'
@@ -61,6 +62,11 @@ const ServicesRoute = ServicesRouteImport.update({
 const SeoAnalyzerRoute = SeoAnalyzerRouteImport.update({
   id: '/seo-analyzer',
   path: '/seo-analyzer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RevenueCalculatorRoute = RevenueCalculatorRouteImport.update({
+  id: '/revenue-calculator',
+  path: '/revenue-calculator',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/free-audit': typeof FreeAuditRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
+  '/revenue-calculator': typeof RevenueCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/free-audit': typeof FreeAuditRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
+  '/revenue-calculator': typeof RevenueCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/free-audit': typeof FreeAuditRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
+  '/revenue-calculator': typeof RevenueCalculatorRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/free-audit'
     | '/portfolio'
     | '/pricing'
+    | '/revenue-calculator'
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/free-audit'
     | '/portfolio'
     | '/pricing'
+    | '/revenue-calculator'
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/free-audit'
     | '/portfolio'
     | '/pricing'
+    | '/revenue-calculator'
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   FreeAuditRoute: typeof FreeAuditRoute
   PortfolioRoute: typeof PortfolioRoute
   PricingRoute: typeof PricingRoute
+  RevenueCalculatorRoute: typeof RevenueCalculatorRoute
   SeoAnalyzerRoute: typeof SeoAnalyzerRoute
   ServicesRoute: typeof ServicesRoute
   ShopifyGraderRoute: typeof ShopifyGraderRoute
@@ -313,6 +326,13 @@ declare module '@tanstack/react-router' {
       path: '/seo-analyzer'
       fullPath: '/seo-analyzer'
       preLoaderRoute: typeof SeoAnalyzerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/revenue-calculator': {
+      id: '/revenue-calculator'
+      path: '/revenue-calculator'
+      fullPath: '/revenue-calculator'
+      preLoaderRoute: typeof RevenueCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -407,6 +427,7 @@ const rootRouteChildren: RootRouteChildren = {
   FreeAuditRoute: FreeAuditRoute,
   PortfolioRoute: PortfolioRoute,
   PricingRoute: PricingRoute,
+  RevenueCalculatorRoute: RevenueCalculatorRoute,
   SeoAnalyzerRoute: SeoAnalyzerRoute,
   ServicesRoute: ServicesRoute,
   ShopifyGraderRoute: ShopifyGraderRoute,
