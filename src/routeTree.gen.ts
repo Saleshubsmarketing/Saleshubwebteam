@@ -13,6 +13,7 @@ import { Route as WebsiteAnalyzerRouteImport } from './routes/website-analyzer'
 import { Route as TrafficCheckerRouteImport } from './routes/traffic-checker'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as TestimonialsRouteImport } from './routes/testimonials'
+import { Route as ShopifyGraderRouteImport } from './routes/shopify-grader'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -44,6 +45,11 @@ const ToolsRoute = ToolsRouteImport.update({
 const TestimonialsRoute = TestimonialsRouteImport.update({
   id: '/testimonials',
   path: '/testimonials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopifyGraderRoute = ShopifyGraderRouteImport.update({
+  id: '/shopify-grader',
+  path: '/shopify-grader',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesRoute = ServicesRouteImport.update({
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
+  '/shopify-grader': typeof ShopifyGraderRoute
   '/testimonials': typeof TestimonialsRoute
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
+  '/shopify-grader': typeof ShopifyGraderRoute
   '/testimonials': typeof TestimonialsRoute
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
+  '/shopify-grader': typeof ShopifyGraderRoute
   '/testimonials': typeof TestimonialsRoute
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/seo-analyzer'
     | '/services'
+    | '/shopify-grader'
     | '/testimonials'
     | '/tools'
     | '/traffic-checker'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/seo-analyzer'
     | '/services'
+    | '/shopify-grader'
     | '/testimonials'
     | '/tools'
     | '/traffic-checker'
@@ -213,6 +224,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/seo-analyzer'
     | '/services'
+    | '/shopify-grader'
     | '/testimonials'
     | '/tools'
     | '/traffic-checker'
@@ -232,6 +244,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   SeoAnalyzerRoute: typeof SeoAnalyzerRoute
   ServicesRoute: typeof ServicesRoute
+  ShopifyGraderRoute: typeof ShopifyGraderRoute
   TestimonialsRoute: typeof TestimonialsRoute
   ToolsRoute: typeof ToolsRoute
   TrafficCheckerRoute: typeof TrafficCheckerRoute
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/testimonials'
       fullPath: '/testimonials'
       preLoaderRoute: typeof TestimonialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shopify-grader': {
+      id: '/shopify-grader'
+      path: '/shopify-grader'
+      fullPath: '/shopify-grader'
+      preLoaderRoute: typeof ShopifyGraderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services': {
@@ -368,6 +388,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   SeoAnalyzerRoute: SeoAnalyzerRoute,
   ServicesRoute: ServicesRoute,
+  ShopifyGraderRoute: ShopifyGraderRoute,
   TestimonialsRoute: TestimonialsRoute,
   ToolsRoute: ToolsRoute,
   TrafficCheckerRoute: TrafficCheckerRoute,
