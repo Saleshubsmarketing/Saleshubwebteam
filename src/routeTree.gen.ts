@@ -27,6 +27,7 @@ import { Route as CompetitorAnalyzerRouteImport } from './routes/competitor-anal
 import { Route as CaseStudiesRouteImport } from './routes/case-studies'
 import { Route as BookCallRouteImport } from './routes/book-call'
 import { Route as BlogRouteImport } from './routes/blog'
+import { Route as AiGrowthAdvisorRouteImport } from './routes/ai-growth-advisor'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -120,6 +121,11 @@ const BlogRoute = BlogRouteImport.update({
   path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiGrowthAdvisorRoute = AiGrowthAdvisorRouteImport.update({
+  id: '/ai-growth-advisor',
+  path: '/ai-growth-advisor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -134,6 +140,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/blog': typeof BlogRoute
   '/book-call': typeof BookCallRoute
   '/case-studies': typeof CaseStudiesRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/blog': typeof BlogRoute
   '/book-call': typeof BookCallRoute
   '/case-studies': typeof CaseStudiesRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/blog': typeof BlogRoute
   '/book-call': typeof BookCallRoute
   '/case-studies': typeof CaseStudiesRoute
@@ -203,6 +212,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/ai-growth-advisor'
     | '/blog'
     | '/book-call'
     | '/case-studies'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/ai-growth-advisor'
     | '/blog'
     | '/book-call'
     | '/case-studies'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/ai-growth-advisor'
     | '/blog'
     | '/book-call'
     | '/case-studies'
@@ -270,6 +282,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AiGrowthAdvisorRoute: typeof AiGrowthAdvisorRoute
   BlogRoute: typeof BlogRoute
   BookCallRoute: typeof BookCallRoute
   CaseStudiesRoute: typeof CaseStudiesRoute
@@ -418,6 +431,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-growth-advisor': {
+      id: '/ai-growth-advisor'
+      path: '/ai-growth-advisor'
+      fullPath: '/ai-growth-advisor'
+      preLoaderRoute: typeof AiGrowthAdvisorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -438,6 +458,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AiGrowthAdvisorRoute: AiGrowthAdvisorRoute,
   BlogRoute: BlogRoute,
   BookCallRoute: BookCallRoute,
   CaseStudiesRoute: CaseStudiesRoute,
