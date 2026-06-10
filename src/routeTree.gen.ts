@@ -19,6 +19,7 @@ import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as FreeAuditRouteImport } from './routes/free-audit'
+import { Route as ConversionAnalyzerRouteImport } from './routes/conversion-analyzer'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CompetitorAnalyzerRouteImport } from './routes/competitor-analyzer'
 import { Route as CaseStudiesRouteImport } from './routes/case-studies'
@@ -77,6 +78,11 @@ const FreeAuditRoute = FreeAuditRouteImport.update({
   path: '/free-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConversionAnalyzerRoute = ConversionAnalyzerRouteImport.update({
+  id: '/conversion-analyzer',
+  path: '/conversion-analyzer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/case-studies': typeof CaseStudiesRoute
   '/competitor-analyzer': typeof CompetitorAnalyzerRoute
   '/contact': typeof ContactRoute
+  '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/case-studies': typeof CaseStudiesRoute
   '/competitor-analyzer': typeof CompetitorAnalyzerRoute
   '/contact': typeof ContactRoute
+  '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/case-studies': typeof CaseStudiesRoute
   '/competitor-analyzer': typeof CompetitorAnalyzerRoute
   '/contact': typeof ContactRoute
+  '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/case-studies'
     | '/competitor-analyzer'
     | '/contact'
+    | '/conversion-analyzer'
     | '/free-audit'
     | '/portfolio'
     | '/pricing'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/case-studies'
     | '/competitor-analyzer'
     | '/contact'
+    | '/conversion-analyzer'
     | '/free-audit'
     | '/portfolio'
     | '/pricing'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/case-studies'
     | '/competitor-analyzer'
     | '/contact'
+    | '/conversion-analyzer'
     | '/free-audit'
     | '/portfolio'
     | '/pricing'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   CaseStudiesRoute: typeof CaseStudiesRoute
   CompetitorAnalyzerRoute: typeof CompetitorAnalyzerRoute
   ContactRoute: typeof ContactRoute
+  ConversionAnalyzerRoute: typeof ConversionAnalyzerRoute
   FreeAuditRoute: typeof FreeAuditRoute
   PortfolioRoute: typeof PortfolioRoute
   PricingRoute: typeof PricingRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FreeAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conversion-analyzer': {
+      id: '/conversion-analyzer'
+      path: '/conversion-analyzer'
+      fullPath: '/conversion-analyzer'
+      preLoaderRoute: typeof ConversionAnalyzerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -383,6 +403,7 @@ const rootRouteChildren: RootRouteChildren = {
   CaseStudiesRoute: CaseStudiesRoute,
   CompetitorAnalyzerRoute: CompetitorAnalyzerRoute,
   ContactRoute: ContactRoute,
+  ConversionAnalyzerRoute: ConversionAnalyzerRoute,
   FreeAuditRoute: FreeAuditRoute,
   PortfolioRoute: PortfolioRoute,
   PricingRoute: PricingRoute,
