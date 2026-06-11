@@ -69,6 +69,18 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Mirror Worker secret bindings into process.env so server functions
+      // can read keys like LOVABLE_API_KEY / PAGESPEED_API_KEY / SEMRUSH_API_KEY.
+      if (env && typeof env === "object") {
+        const g: any = globalThis as any;
+        if (!g.process) g.process = { env: {} };
+        if (!g.process.env) g.process.env = {};
+        for (const [k, v] of Object.entries(env as Record<string, unknown>)) {
+          if (typeof v === "string" && g.process.env[k] === undefined) {
+            g.process.env[k] = v;
+          }
+        }
+      }
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
