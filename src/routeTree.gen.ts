@@ -20,6 +20,7 @@ import { Route as RoiCalculatorRouteImport } from './routes/roi-calculator'
 import { Route as RevenueCalculatorRouteImport } from './routes/revenue-calculator'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PortalRouteImport } from './routes/portal'
 import { Route as MarketingHealthScoreRouteImport } from './routes/marketing-health-score'
 import { Route as FreeAuditRouteImport } from './routes/free-audit'
 import { Route as ConversionAnalyzerRouteImport } from './routes/conversion-analyzer'
@@ -85,6 +86,11 @@ const PricingRoute = PricingRouteImport.update({
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortalRoute = PortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MarketingHealthScoreRoute = MarketingHealthScoreRouteImport.update({
@@ -155,6 +161,7 @@ export interface FileRoutesByFullPath {
   '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
   '/marketing-health-score': typeof MarketingHealthScoreRoute
+  '/portal': typeof PortalRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
   '/marketing-health-score': typeof MarketingHealthScoreRoute
+  '/portal': typeof PortalRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
@@ -204,6 +212,7 @@ export interface FileRoutesById {
   '/conversion-analyzer': typeof ConversionAnalyzerRoute
   '/free-audit': typeof FreeAuditRoute
   '/marketing-health-score': typeof MarketingHealthScoreRoute
+  '/portal': typeof PortalRoute
   '/portfolio': typeof PortfolioRoute
   '/pricing': typeof PricingRoute
   '/revenue-calculator': typeof RevenueCalculatorRoute
@@ -230,6 +239,7 @@ export interface FileRouteTypes {
     | '/conversion-analyzer'
     | '/free-audit'
     | '/marketing-health-score'
+    | '/portal'
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/conversion-analyzer'
     | '/free-audit'
     | '/marketing-health-score'
+    | '/portal'
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/conversion-analyzer'
     | '/free-audit'
     | '/marketing-health-score'
+    | '/portal'
     | '/portfolio'
     | '/pricing'
     | '/revenue-calculator'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   ConversionAnalyzerRoute: typeof ConversionAnalyzerRoute
   FreeAuditRoute: typeof FreeAuditRoute
   MarketingHealthScoreRoute: typeof MarketingHealthScoreRoute
+  PortalRoute: typeof PortalRoute
   PortfolioRoute: typeof PortfolioRoute
   PricingRoute: typeof PricingRoute
   RevenueCalculatorRoute: typeof RevenueCalculatorRoute
@@ -393,6 +406,13 @@ declare module '@tanstack/react-router' {
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portal': {
+      id: '/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof PortalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/marketing-health-score': {
@@ -487,6 +507,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConversionAnalyzerRoute: ConversionAnalyzerRoute,
   FreeAuditRoute: FreeAuditRoute,
   MarketingHealthScoreRoute: MarketingHealthScoreRoute,
+  PortalRoute: PortalRoute,
   PortfolioRoute: PortfolioRoute,
   PricingRoute: PricingRoute,
   RevenueCalculatorRoute: RevenueCalculatorRoute,
