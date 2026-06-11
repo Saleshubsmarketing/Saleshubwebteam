@@ -7,6 +7,7 @@ const links = [
   { to: "/services", label: "Services" },
   { to: "/portfolio", label: "Portfolio" },
   { to: "/tools", label: "Tools" },
+  { to: "/ai-growth-advisor", label: "AI Advisor" },
   { to: "/case-studies", label: "Case Studies" },
   { to: "/pricing", label: "Pricing" },
   { to: "/blog", label: "Blog" },
