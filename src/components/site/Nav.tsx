@@ -46,7 +46,7 @@ export function Nav() {
               </div>
             </div>
             <span className="font-semibold tracking-tight text-lg">
-              Saleshubs<span className="text-gradient-brand">WebTeam</span>
+              Saleshubs<span className="text-gradient-brand">WebOffice</span>
             </span>
           </Link>
 
