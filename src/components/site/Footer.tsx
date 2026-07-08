@@ -13,7 +13,7 @@ export function Footer() {
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="font-semibold text-lg">
-                Saleshubs<span className="text-gradient-brand">WebTeam</span>
+                Saleshubs<span className="text-gradient-brand">WebOffice</span>
               </span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground max-w-sm">
