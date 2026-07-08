@@ -7,7 +7,7 @@ import { Loader2, Sparkles, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/ai-growth-advisor")({
   head: () => ({ meta: [
-    { title: "AI Growth Advisor | SaleshubsWebTeam" },
+    { title: "AI Growth Advisor | SaleshubsWebOffice" },
     { name: "description", content: "AI-powered eCommerce growth strategy across SEO, funnel, email and ads." },
   ]}),
   component: Page,

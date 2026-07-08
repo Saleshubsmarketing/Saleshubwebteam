@@ -5,7 +5,7 @@ import { LogIn, LogOut, Plus, ExternalLink, Trash2, Gauge, Search, BarChart3, Sp
 
 export const Route = createFileRoute("/portal")({
   head: () => ({ meta: [
-    { title: "Client Portal | SaleshubsWebTeam" },
+    { title: "Client Portal | SaleshubsWebOffice" },
     { name: "description", content: "Track your stores, audits, growth scores and saved tools in one place." },
   ]}),
   component: Portal,

@@ -5,7 +5,7 @@ import { useState } from "react";
 export const Route = createFileRoute("/portfolio")({
   head: () => ({
     meta: [
-      { title: "Portfolio — Shopify Stores We've Built | SaleshubsWebTeam" },
+      { title: "Portfolio — Shopify Stores We've Built | SaleshubsWebOffice" },
       { name: "description", content: "A premium gallery of Shopify storefronts, funnels and brand systems we've designed." },
     ],
   }),

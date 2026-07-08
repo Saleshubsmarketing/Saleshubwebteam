@@ -52,7 +52,7 @@ export function Chatbot() {
             <div className="bg-gradient-brand rounded-lg p-1.5"><Sparkles className="w-4 h-4 text-white"/></div>
             <div>
               <p className="text-sm font-semibold">AI Growth Assistant</p>
-              <p className="text-[10px] text-muted-foreground">Powered by SaleshubsWebTeam AI</p>
+              <p className="text-[10px] text-muted-foreground">Powered by SaleshubsWebOffice AI</p>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">

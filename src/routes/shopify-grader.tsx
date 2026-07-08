@@ -7,7 +7,7 @@ import { Loader2, ShoppingBag, AlertTriangle, CheckCircle2, AlertCircle } from "
 
 export const Route = createFileRoute("/shopify-grader")({
   head: () => ({ meta: [
-    { title: "Shopify Store Grader | SaleshubsWebTeam" },
+    { title: "Shopify Store Grader | SaleshubsWebOffice" },
     { name: "description", content: "Score your Shopify store's speed, trust signals, mobile UX and SEO — live." },
   ]}),
   component: Page,

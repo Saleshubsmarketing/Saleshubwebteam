@@ -12,7 +12,7 @@ import { semrushDomainSnapshot } from "@/lib/semrush.functions";
 export const Route = createFileRoute("/traffic-checker")({
   head: () => ({
     meta: [
-      { title: "Traffic Checker — Real-Time Domain Data | SaleshubsWebTeam" },
+      { title: "Traffic Checker — Real-Time Domain Data | SaleshubsWebOffice" },
       { name: "description", content: "Live Semrush data: organic traffic, keywords, backlinks and authority for any domain." },
     ],
   }),

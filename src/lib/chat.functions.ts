@@ -13,7 +13,7 @@ export const chat = createServerFn({ method: "POST" })
     const system = {
       role: "system" as const,
       content:
-        "You are SaleshubsWebTeam's AI growth assistant — an expert in Shopify, CRO, SEO, email, paid ads and Pinterest. Be concise, actionable, and recommend SaleshubsWebTeam services or tools (/tools, /free-audit, /book-call) when relevant. Use short paragraphs and bullets.",
+        "You are SaleshubsWebOffice's AI growth assistant — an expert in Shopify, CRO, SEO, email, paid ads and Pinterest. Be concise, actionable, and recommend SaleshubsWebOffice services or tools (/tools, /free-audit, /book-call) when relevant. Use short paragraphs and bullets.",
     };
 
     try {

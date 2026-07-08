@@ -8,7 +8,7 @@ import { analyzeWebsite } from "@/lib/analyzer.functions";
 export const Route = createFileRoute("/seo-analyzer")({
   head: () => ({
     meta: [
-      { title: "Free SEO Analyzer | SaleshubsWebTeam" },
+      { title: "Free SEO Analyzer | SaleshubsWebOffice" },
       { name: "description", content: "Real-time SEO scan: on-page tags, schema, robots/sitemap and Google Lighthouse SEO score." },
     ],
   }),

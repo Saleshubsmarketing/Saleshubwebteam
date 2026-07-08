@@ -7,7 +7,7 @@ import { Loader2, Swords, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/competitor-analyzer")({
   head: () => ({ meta: [
-    { title: "Competitor Analyzer | SaleshubsWebTeam" },
+    { title: "Competitor Analyzer | SaleshubsWebOffice" },
     { name: "description", content: "Compare two domains head-to-head with live Semrush data." },
   ]}),
   component: Page,

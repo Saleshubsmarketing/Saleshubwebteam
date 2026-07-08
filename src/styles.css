@@ -63,7 +63,7 @@
 
 :root {
   --radius: 0.625rem;
-  /* Warm sunset dark theme — SaleshubsWebTeam */
+  /* Warm sunset dark theme — SaleshubsWebOffice */
   --background: oklch(0.17 0.03 230);          /* deep teal-navy */
   --foreground: oklch(0.98 0.005 240);
   --card: oklch(0.22 0.03 225 / 0.6);

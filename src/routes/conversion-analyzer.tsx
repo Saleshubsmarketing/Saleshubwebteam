@@ -7,7 +7,7 @@ import { Loader2, MousePointerClick, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/conversion-analyzer")({
   head: () => ({ meta: [
-    { title: "Conversion Analyzer | SaleshubsWebTeam" },
+    { title: "Conversion Analyzer | SaleshubsWebOffice" },
     { name: "description", content: "Score your store's CTAs, trust signals and checkout UX from a live page scan." },
   ]}),
   component: Page,
