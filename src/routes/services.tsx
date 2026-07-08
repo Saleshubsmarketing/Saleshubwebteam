@@ -27,7 +27,7 @@ export const Route = createFileRoute("/services")({
   head: () => ({
     meta: [
       {
-        title: "Services — Shopify Design, CRO, SEO, Email, Paid Ads | SaleshubsWebTeam",
+        title: "Services — Shopify Design, CRO, SEO, Email, Paid Ads | SaleshubsWebOffice",
       },
       {
         name: "description",

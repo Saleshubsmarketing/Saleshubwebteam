@@ -5,7 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Transparent Shopify Growth Plans | SaleshubsWebTeam" },
+      { title: "Pricing — Transparent Shopify Growth Plans | SaleshubsWebOffice" },
       { name: "description", content: "Three engagement levels: Launch, Scale and Plus. Month-to-month after a 60 day initial commitment." },
     ],
   }),

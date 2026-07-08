@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/revenue-calculator")({
   head: () => ({ meta: [
-    { title: "Revenue Opportunity Calculator | SaleshubsWebTeam" },
+    { title: "Revenue Opportunity Calculator | SaleshubsWebOffice" },
     { name: "description", content: "Forecast the revenue lift from CRO. Plug in traffic, CR and AOV." },
   ]}),
   component: Page,

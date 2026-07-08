@@ -44,7 +44,7 @@ async function probeUrl(url: string, timeoutMs = 15000): Promise<FetchProbe> {
       signal: controller.signal,
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; SaleshubsWebTeamAuditBot/1.0; +https://novacommerce.ai/bot)",
+          "Mozilla/5.0 (compatible; SaleshubsWebOfficeAuditBot/1.0; +https://novacommerce.ai/bot)",
         Accept: "text/html,application/xhtml+xml,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
       },

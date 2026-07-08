@@ -49,7 +49,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between gap-4 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} SaleshubsWebTeam. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} SaleshubsWebOffice. All rights reserved.</p>
           <p>Built for ambitious Shopify brands.</p>
         </div>
       </div>

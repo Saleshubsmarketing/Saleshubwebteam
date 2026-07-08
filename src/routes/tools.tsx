@@ -7,7 +7,7 @@ import {
 
 export const Route = createFileRoute("/tools")({
   head: () => ({ meta: [
-    { title: "Free Growth Tools | SaleshubsWebTeam" },
+    { title: "Free Growth Tools | SaleshubsWebOffice" },
     { name: "description", content: "Real-time eCommerce growth tools: SEO, traffic, competitor, Shopify and revenue analyzers." },
   ]}),
   component: ToolsHub,

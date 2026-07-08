@@ -24,7 +24,7 @@ import {
 export const Route = createFileRoute("/free-audit")({
   head: () => ({
     meta: [
-      { title: "Free Shopify Audit | SaleshubsWebTeam" },
+      { title: "Free Shopify Audit | SaleshubsWebOffice" },
       {
         name: "description",
         content:

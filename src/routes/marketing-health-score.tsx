@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 
 export const Route = createFileRoute("/marketing-health-score")({
   head: () => ({ meta: [
-    { title: "Marketing Health Score | SaleshubsWebTeam" },
+    { title: "Marketing Health Score | SaleshubsWebOffice" },
     { name: "description", content: "Composite growth score across SEO, website, email, ads, social and funnels." },
   ]}),
   component: Page,
