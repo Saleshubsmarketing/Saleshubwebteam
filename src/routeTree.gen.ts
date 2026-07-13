@@ -13,6 +13,7 @@ import { Route as WebsiteAnalyzerRouteImport } from './routes/website-analyzer'
 import { Route as TrafficCheckerRouteImport } from './routes/traffic-checker'
 import { Route as ToolsRouteImport } from './routes/tools'
 import { Route as TestimonialsRouteImport } from './routes/testimonials'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ShopifyGraderRouteImport } from './routes/shopify-grader'
 import { Route as ServicesRouteImport } from './routes/services'
 import { Route as SeoAnalyzerRouteImport } from './routes/seo-analyzer'
@@ -51,6 +52,11 @@ const ToolsRoute = ToolsRouteImport.update({
 const TestimonialsRoute = TestimonialsRouteImport.update({
   id: '/testimonials',
   path: '/testimonials',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopifyGraderRoute = ShopifyGraderRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/testimonials': typeof TestimonialsRoute
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/testimonials': typeof TestimonialsRoute
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/seo-analyzer': typeof SeoAnalyzerRoute
   '/services': typeof ServicesRoute
   '/shopify-grader': typeof ShopifyGraderRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/testimonials': typeof TestimonialsRoute
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
+    | '/sitemap.xml'
     | '/testimonials'
     | '/tools'
     | '/traffic-checker'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
+    | '/sitemap.xml'
     | '/testimonials'
     | '/tools'
     | '/traffic-checker'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/seo-analyzer'
     | '/services'
     | '/shopify-grader'
+    | '/sitemap.xml'
     | '/testimonials'
     | '/tools'
     | '/traffic-checker'
@@ -323,6 +335,7 @@ export interface RootRouteChildren {
   SeoAnalyzerRoute: typeof SeoAnalyzerRoute
   ServicesRoute: typeof ServicesRoute
   ShopifyGraderRoute: typeof ShopifyGraderRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TestimonialsRoute: typeof TestimonialsRoute
   ToolsRoute: typeof ToolsRoute
   TrafficCheckerRoute: typeof TrafficCheckerRoute
@@ -357,6 +370,13 @@ declare module '@tanstack/react-router' {
       path: '/testimonials'
       fullPath: '/testimonials'
       preLoaderRoute: typeof TestimonialsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shopify-grader': {
@@ -515,6 +535,7 @@ const rootRouteChildren: RootRouteChildren = {
   SeoAnalyzerRoute: SeoAnalyzerRoute,
   ServicesRoute: ServicesRoute,
   ShopifyGraderRoute: ShopifyGraderRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TestimonialsRoute: TestimonialsRoute,
   ToolsRoute: ToolsRoute,
   TrafficCheckerRoute: TrafficCheckerRoute,
@@ -523,13 +544,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
