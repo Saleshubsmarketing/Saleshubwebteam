@@ -20,6 +20,7 @@ import {
   revenueBands,
   goals,
 } from "@/lib/lead-schemas";
+import { submitLeadClient } from "@/lib/submit-lead";
 
 export const Route = createFileRoute("/free-audit")({
   head: () => ({
@@ -65,9 +66,21 @@ function AuditPage() {
   };
 
   const onSubmit = form.handleSubmit(async (values) => {
-    await new Promise((r) => setTimeout(r, 900));
-    toast.success("Audit request received", {
-      description: `We'll email ${values.email} within 72 hours.`,
+    const res = await submitLeadClient({
+      form_type: "free_audit",
+      full_name: values.name,
+      email: values.email,
+      website: values.store,
+      budget: values.revenue,
+      requested_service: values.goal,
+      message: values.notes,
+    });
+    if (!res.ok) {
+      toast.error(res.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+    toast.success("Thank you!", {
+      description: "Your request has been received. Our team will contact you within 24–72 hours.",
     });
     setSent(true);
   });
