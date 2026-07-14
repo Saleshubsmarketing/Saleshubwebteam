@@ -33,7 +33,9 @@ import { Route as BlogRouteImport } from './routes/blog'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AiGrowthAdvisorRouteImport } from './routes/ai-growth-advisor'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedAdminLeadsRouteImport } from './routes/_authenticated/admin.leads'
 
 const WebsiteAnalyzerRoute = WebsiteAnalyzerRouteImport.update({
   id: '/website-analyzer',
@@ -155,10 +157,19 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAdminLeadsRoute = AuthenticatedAdminLeadsRouteImport.update({
+  id: '/admin/leads',
+  path: '/admin/leads',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -187,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
+  '/admin/leads': typeof AuthenticatedAdminLeadsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -214,10 +226,12 @@ export interface FileRoutesByTo {
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
+  '/admin/leads': typeof AuthenticatedAdminLeadsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/ai-growth-advisor': typeof AiGrowthAdvisorRoute
   '/auth': typeof AuthRoute
@@ -242,6 +256,7 @@ export interface FileRoutesById {
   '/tools': typeof ToolsRoute
   '/traffic-checker': typeof TrafficCheckerRoute
   '/website-analyzer': typeof WebsiteAnalyzerRoute
+  '/_authenticated/admin/leads': typeof AuthenticatedAdminLeadsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -271,6 +286,7 @@ export interface FileRouteTypes {
     | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
+    | '/admin/leads'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -298,9 +314,11 @@ export interface FileRouteTypes {
     | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
+    | '/admin/leads'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
     | '/about'
     | '/ai-growth-advisor'
     | '/auth'
@@ -325,10 +343,12 @@ export interface FileRouteTypes {
     | '/tools'
     | '/traffic-checker'
     | '/website-analyzer'
+    | '/_authenticated/admin/leads'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AiGrowthAdvisorRoute: typeof AiGrowthAdvisorRoute
   AuthRoute: typeof AuthRoute
@@ -525,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -532,11 +559,30 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/leads': {
+      id: '/_authenticated/admin/leads'
+      path: '/admin/leads'
+      fullPath: '/admin/leads'
+      preLoaderRoute: typeof AuthenticatedAdminLeadsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminLeadsRoute: typeof AuthenticatedAdminLeadsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminLeadsRoute: AuthenticatedAdminLeadsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AiGrowthAdvisorRoute: AiGrowthAdvisorRoute,
   AuthRoute: AuthRoute,
