@@ -14,16 +14,134 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      lead_submission_log: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: number
+          ip_address: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: number
+          ip_address?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: number
+          ip_address?: string | null
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          budget: string | null
+          company: string | null
+          created_at: string
+          email: string
+          extra: Json | null
+          form_type: Database["public"]["Enums"]["lead_form_type"]
+          full_name: string
+          id: string
+          ip_address: string | null
+          message: string | null
+          phone: string | null
+          requested_service: string | null
+          slot: string | null
+          source_page: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+          user_agent: string | null
+          website: string | null
+        }
+        Insert: {
+          budget?: string | null
+          company?: string | null
+          created_at?: string
+          email: string
+          extra?: Json | null
+          form_type: Database["public"]["Enums"]["lead_form_type"]
+          full_name: string
+          id?: string
+          ip_address?: string | null
+          message?: string | null
+          phone?: string | null
+          requested_service?: string | null
+          slot?: string | null
+          source_page?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          user_agent?: string | null
+          website?: string | null
+        }
+        Update: {
+          budget?: string | null
+          company?: string | null
+          created_at?: string
+          email?: string
+          extra?: Json | null
+          form_type?: Database["public"]["Enums"]["lead_form_type"]
+          full_name?: string
+          id?: string
+          ip_address?: string | null
+          message?: string | null
+          phone?: string | null
+          requested_service?: string | null
+          slot?: string | null
+          source_page?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+          user_agent?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      lead_form_type: "contact" | "free_audit" | "book_consultation"
+      lead_status:
+        | "new"
+        | "contacted"
+        | "qualified"
+        | "proposal_sent"
+        | "won"
+        | "lost"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +268,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      lead_form_type: ["contact", "free_audit", "book_consultation"],
+      lead_status: [
+        "new",
+        "contacted",
+        "qualified",
+        "proposal_sent",
+        "won",
+        "lost",
+      ],
+    },
   },
 } as const

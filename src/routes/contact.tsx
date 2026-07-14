@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { contactSchema, type ContactValues, revenueBands } from "@/lib/lead-schemas";
+import { submitLeadClient } from "@/lib/submit-lead";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -30,9 +31,20 @@ function ContactPage() {
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Message sent", {
-      description: `We'll get back to ${values.email} within 2 business hours.`,
+    const res = await submitLeadClient({
+      form_type: "contact",
+      full_name: values.name,
+      email: values.email,
+      website: values.store || "",
+      budget: values.revenue || "",
+      message: values.message,
+    });
+    if (!res.ok) {
+      toast.error(res.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+    toast.success("Thank you!", {
+      description: "Your request has been received. Our team will contact you within 24–72 hours.",
     });
     setSent(true);
   });

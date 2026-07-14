@@ -11,6 +11,7 @@ import {
   type BookCallValues,
   revenueBands,
 } from "@/lib/lead-schemas";
+import { submitLeadClient } from "@/lib/submit-lead";
 
 export const Route = createFileRoute("/book-call")({
   head: () => ({
@@ -57,9 +58,21 @@ function BookPage() {
   const selectedSlot = form.watch("slot");
 
   const onSubmit = form.handleSubmit(async (values) => {
-    await new Promise((r) => setTimeout(r, 800));
-    toast.success("Call reserved", {
-      description: `${values.slot} — confirmation sent to ${values.email}.`,
+    const res = await submitLeadClient({
+      form_type: "book_consultation",
+      full_name: values.name,
+      email: values.email,
+      website: values.store,
+      budget: values.revenue,
+      slot: values.slot,
+      message: values.goal,
+    });
+    if (!res.ok) {
+      toast.error(res.error ?? "Something went wrong. Please try again.");
+      return;
+    }
+    toast.success("Thank you!", {
+      description: "Your request has been received. Our team will contact you within 24–72 hours.",
     });
     setSent(true);
   });
