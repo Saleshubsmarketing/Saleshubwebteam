@@ -1,6 +1,4 @@
-// Server-only email dispatcher for lead notifications.
-// Uses the Lovable Emails queue when the project's sender domain is configured
-// (enqueue_email RPC exists). Otherwise logs a warning so the lead is still saved.
+// Server-only email dispatcher for lead notifications via Resend.
 
 type LeadRow = {
   id: string;
@@ -20,6 +18,8 @@ type LeadRow = {
 
 const ADMIN_EMAIL = "support@saleshubsweboffice.com";
 const FROM_NAME = "SaleshubsWebOffice";
+// Must be an address on a domain verified in Resend.
+const FROM_ADDRESS = "support@saleshubsweboffice.com";
 const REPLY_TO = "support@saleshubsweboffice.com";
 const SITE = "https://saleshubsweboffice.com";
 
@@ -86,44 +86,54 @@ function customerHtml(lead: LeadRow) {
   </div></body></html>`;
 }
 
-async function enqueue(payload: {
+async function sendViaResend(payload: {
   to: string;
   subject: string;
   html: string;
-  from_name?: string;
   reply_to?: string;
 }) {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  // Try Lovable Emails queue first.
-  const { error } = await supabaseAdmin.rpc("enqueue_email" as any, {
-    p_queue: "transactional_emails",
-    p_payload: payload,
-  } as any);
-  if (error) {
-    console.warn(
-      "[leads-email] Email queue not available yet — lead saved but email not sent.",
-      "Set up an email sender domain in Cloud → Emails to enable delivery.",
-      "detail:",
-      error.message,
-    );
+  const key = process.env.RESEND_API_KEY;
+  if (!key) {
+    console.warn("[leads-email] RESEND_API_KEY not set — skipping email send.");
+    return;
+  }
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        from: `${FROM_NAME} <${FROM_ADDRESS}>`,
+        to: [payload.to],
+        subject: payload.subject,
+        html: payload.html,
+        reply_to: payload.reply_to,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[leads-email] Resend send failed [${res.status}]: ${body}`);
+    }
+  } catch (err) {
+    console.error("[leads-email] Resend request threw:", err);
   }
 }
 
 export async function sendLeadEmails(lead: LeadRow) {
   const subjectAdmin = `🚀 New Website Lead - ${FORM_LABEL[lead.form_type]} - ${lead.full_name}`;
   await Promise.allSettled([
-    enqueue({
+    sendViaResend({
       to: ADMIN_EMAIL,
       subject: subjectAdmin,
       html: adminHtml(lead),
-      from_name: FROM_NAME,
       reply_to: lead.email,
     }),
-    enqueue({
+    sendViaResend({
       to: lead.email,
       subject: "We've Received Your Request – SaleshubsWebOffice",
       html: customerHtml(lead),
-      from_name: FROM_NAME,
       reply_to: REPLY_TO,
     }),
   ]);
