@@ -94,8 +94,8 @@ async function sendViaResend(payload: {
 }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.warn("[leads-email] RESEND_API_KEY not set — skipping email send.");
-    return;
+    console.error("[leads-email] RESEND_API_KEY not set — skipping email send.");
+    return { ok: false, status: 0, body: "RESEND_API_KEY not set" };
   }
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -112,12 +112,16 @@ async function sendViaResend(payload: {
         reply_to: payload.reply_to,
       }),
     });
+    const body = await res.text();
     if (!res.ok) {
-      const body = await res.text();
-      console.error(`[leads-email] Resend send failed [${res.status}]: ${body}`);
+      console.error(`[leads-email] Resend send failed to ${payload.to} [${res.status}]: ${body}`);
+    } else {
+      console.log(`[leads-email] Resend accepted email to ${payload.to}: ${body}`);
     }
+    return { ok: res.ok, status: res.status, body };
   } catch (err) {
     console.error("[leads-email] Resend request threw:", err);
+    return { ok: false, status: 0, body: String(err) };
   }
 }
 
