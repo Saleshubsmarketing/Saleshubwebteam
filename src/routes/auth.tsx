@@ -13,11 +13,18 @@ export const Route = createFileRoute("/auth")({
       { name: "robots", content: "noindex" },
     ],
   }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    next: typeof s.next === "string" ? s.next : "",
+  }),
   component: AuthPage,
 });
 
 function AuthPage() {
   const nav = useNavigate();
+  const { next } = Route.useSearch();
+  // Only allow same-origin relative paths so we can't be used as an open redirect.
+  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "";
+  const returnTo = safeNext || "/admin/leads";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +35,7 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
-        const redirect = `${window.location.origin}/admin/leads`;
+        const redirect = `${window.location.origin}${returnTo}`;
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -40,7 +47,12 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
-      nav({ to: "/admin/leads" });
+      // Preserve OAuth consent flow — safeNext points back at /.lovable/oauth/consent when present.
+      if (safeNext) {
+        window.location.href = safeNext;
+      } else {
+        nav({ to: "/admin/leads" });
+      }
     } catch (err: any) {
       toast.error(err?.message ?? "Authentication failed");
     } finally {
