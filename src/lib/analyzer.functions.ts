@@ -168,9 +168,12 @@ async function checkUrlStatus(url: string, timeoutMs = 6000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
+    if (!isSafePublicUrl(url)) return { url, status: 0, ok: false };
     let r = await fetch(url, { method: "HEAD", redirect: "follow", signal: ctrl.signal });
+    if (r.url && !isSafePublicUrl(r.url)) return { url, status: 0, ok: false };
     if (r.status === 405 || r.status === 403) {
       r = await fetch(url, { method: "GET", redirect: "follow", signal: ctrl.signal });
+      if (r.url && !isSafePublicUrl(r.url)) return { url, status: 0, ok: false };
     }
     return { url, status: r.status, ok: r.ok };
   } catch {
