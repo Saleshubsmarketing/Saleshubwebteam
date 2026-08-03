@@ -211,29 +211,9 @@ export const deleteLead = createServerFn({ method: "POST" })
   });
 
 // First-time bootstrap: promote current signed-in user to admin if no admin exists.
-export const claimAdmin = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { count } = await supabaseAdmin
-      .from("user_roles")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin");
-    if ((count ?? 0) > 0) {
-      const { data: mine } = await supabaseAdmin
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", context.userId)
-        .eq("role", "admin")
-        .maybeSingle();
-      return { ok: !!mine, alreadyClaimed: true };
-    }
-    const { error } = await supabaseAdmin
-      .from("user_roles")
-      .insert({ user_id: context.userId, role: "admin" });
-    if (error) throw new Error(error.message);
-    return { ok: true, alreadyClaimed: false };
-  });
+// The self-service "first user becomes admin" bootstrap was removed: it allowed
+// any visitor to seize permanent admin access. Admin roles are now granted only
+// directly in the database by the project owner.
 
 export const amIAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

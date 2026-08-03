@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { isSafePublicUrl } from "@/lib/url-guard";
 
 const InputSchema = z.object({
   url: z.string().trim().min(4).max(2048),
@@ -10,7 +11,7 @@ function normalizeUrl(input: string): string | null {
   if (!/^https?:\/\//i.test(u)) u = "https://" + u;
   try {
     const parsed = new URL(u);
-    if (!parsed.hostname.includes(".")) return null;
+    if (!isSafePublicUrl(parsed.toString())) return null;
     return parsed.toString();
   } catch {
     return null;
@@ -38,6 +39,7 @@ async function probeUrl(url: string, timeoutMs = 15000): Promise<FetchProbe> {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const t0 = Date.now();
   try {
+    if (!isSafePublicUrl(url)) throw new Error("blocked-host");
     const res = await fetch(url, {
       method: "GET",
       redirect: "follow",
@@ -49,6 +51,8 @@ async function probeUrl(url: string, timeoutMs = 15000): Promise<FetchProbe> {
         "Accept-Language": "en-US,en;q=0.9",
       },
     });
+    // Re-validate after redirects: redirect: "follow" can land on another host.
+    if (res.url && !isSafePublicUrl(res.url)) throw new Error("blocked-host");
     const ttfb = Date.now() - t0;
     const text = await res.text();
     const total = Date.now() - t0;
@@ -164,9 +168,12 @@ async function checkUrlStatus(url: string, timeoutMs = 6000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
+    if (!isSafePublicUrl(url)) return { url, status: 0, ok: false };
     let r = await fetch(url, { method: "HEAD", redirect: "follow", signal: ctrl.signal });
+    if (r.url && !isSafePublicUrl(r.url)) return { url, status: 0, ok: false };
     if (r.status === 405 || r.status === 403) {
       r = await fetch(url, { method: "GET", redirect: "follow", signal: ctrl.signal });
+      if (r.url && !isSafePublicUrl(r.url)) return { url, status: 0, ok: false };
     }
     return { url, status: r.status, ok: r.ok };
   } catch {
