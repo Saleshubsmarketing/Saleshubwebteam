@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
-import { listLeads, updateLeadStatus, deleteLead, claimAdmin, amIAdmin } from "@/lib/leads.functions";
+import { listLeads, updateLeadStatus, deleteLead, amIAdmin } from "@/lib/leads.functions";
 import { SiteLayout, PageHero } from "@/components/site/SiteLayout";
 import { Loader2, Search, Trash2, Download, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -34,7 +34,6 @@ function AdminLeads() {
   const list = useServerFn(listLeads);
   const update = useServerFn(updateLeadStatus);
   const del = useServerFn(deleteLead);
-  const claim = useServerFn(claimAdmin);
   const check = useServerFn(amIAdmin);
 
   const [rows, setRows] = useState<Row[]>([]);
@@ -75,14 +74,6 @@ function AdminLeads() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const onClaim = async () => {
-    try {
-      const r = await claim();
-      if (r.ok) { toast.success("You are now the admin."); setAdmin(true); reload(); }
-      else toast.error("Admin already claimed by another user.");
-    } catch (e: any) { toast.error(e?.message ?? "Could not claim admin"); }
-  };
 
   const onExport = () => {
     const cols = ["id","created_at","form_type","full_name","email","phone","company","website","requested_service","budget","message","status","source_page","slot"] as const;
