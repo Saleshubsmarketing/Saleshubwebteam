@@ -101,11 +101,10 @@ function AdminLeads() {
         {admin === false ? (
           <div className="glass-strong rounded-3xl p-8 text-center space-y-4">
             <ShieldCheck className="w-10 h-10 text-[var(--brand-cyan)] mx-auto" />
-            <h3 className="text-xl font-semibold">You're signed in, but not an admin yet</h3>
+            <h3 className="text-xl font-semibold">You don't have admin access</h3>
             <p className="text-sm text-muted-foreground">
-              If you're the first person to sign in, click below to claim admin access. Otherwise ask an existing admin to grant it.
+              Lead management is restricted to administrators. Ask the site owner to grant your account admin access.
             </p>
-            <button onClick={onClaim} className="px-6 py-3 rounded-xl bg-gradient-brand text-white font-medium btn-glow">Claim admin access</button>
             <button onClick={signOut} className="block mx-auto text-xs text-muted-foreground hover:text-foreground">Sign out</button>
           </div>
         ) : (
