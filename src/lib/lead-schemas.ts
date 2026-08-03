@@ -64,7 +64,7 @@ export const contactSchema = z.object({
     .max(255)
     .optional()
     .or(z.literal("")),
-  revenue: z.enum(revenueBands).optional(),
+  revenue: z.enum(revenueBands).optional().or(z.literal("")),
   message: z
     .string()
     .trim()

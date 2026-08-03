@@ -94,8 +94,7 @@ async function sendViaResend(payload: {
 }) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.error("[leads-email] RESEND_API_KEY not set — skipping email send.");
-    return { ok: false, status: 0, body: "RESEND_API_KEY not set" };
+    throw new Error("RESEND_API_KEY not set");
   }
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -118,16 +117,20 @@ async function sendViaResend(payload: {
     } else {
       console.log(`[leads-email] Resend accepted email to ${payload.to}: ${body}`);
     }
-    return { ok: res.ok, status: res.status, body };
+    if (!res.ok) throw new Error(`Resend send failed [${res.status}]: ${body}`);
+    const parsed = JSON.parse(body) as { id?: string };
+    if (!parsed.id) throw new Error(`Resend response did not include a message ID: ${body}`);
+    return { ok: true as const, status: res.status, id: parsed.id, body };
   } catch (err) {
     console.error("[leads-email] Resend request threw:", err);
-    return { ok: false, status: 0, body: String(err) };
+    throw err;
   }
 }
 
 export async function sendLeadEmails(lead: LeadRow) {
   const subjectAdmin = `🚀 New Website Lead - ${FORM_LABEL[lead.form_type]} - ${lead.full_name}`;
-  await Promise.allSettled([
+  console.log(`[leads-email] sendLeadEmails executing for lead ${lead.id}`);
+  const [admin, customer] = await Promise.all([
     sendViaResend({
       to: ADMIN_EMAIL,
       subject: subjectAdmin,
@@ -141,4 +144,6 @@ export async function sendLeadEmails(lead: LeadRow) {
       reply_to: REPLY_TO,
     }),
   ]);
+  console.log(`[leads-email] completed lead ${lead.id}; admin=${admin.id}; customer=${customer.id}`);
+  return { admin, customer };
 }
