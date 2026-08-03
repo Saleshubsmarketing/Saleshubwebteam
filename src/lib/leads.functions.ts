@@ -125,15 +125,27 @@ export const submitLead = createServerFn({ method: "POST" })
 
     await supabaseAdmin.from("lead_submission_log").insert({ ip_address: ip, email: data.email });
 
-    // Fire-and-forget emails
+    // A submission is only reported as fully successful when both messages
+    // were accepted and returned provider message IDs.
     try {
       const { sendLeadEmails } = await import("@/lib/leads-email.server");
-      await sendLeadEmails(row);
+      const emails = await sendLeadEmails(row);
+      return {
+        ok: true as const,
+        id: row.id,
+        emailMessageIds: {
+          admin: emails.admin.id,
+          customer: emails.customer.id,
+        },
+      };
     } catch (e) {
       console.error("[leads] email dispatch failed", e);
+      return {
+        ok: false as const,
+        id: row.id,
+        error: "Your request was saved, but confirmation email delivery could not be started. Please contact support.",
+      };
     }
-
-    return { ok: true as const, id: row.id };
   });
 
 // ---------- Admin ----------
