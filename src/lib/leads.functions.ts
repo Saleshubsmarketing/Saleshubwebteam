@@ -83,20 +83,6 @@ export const submitLead = createServerFn({ method: "POST" })
       return { ok: false as const, error: "We already received a recent request from this email." };
     }
 
-    // Duplicate suppression: same email + form_type in last 2 min
-    const dupeSince = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-    const { data: dupe } = await supabaseAdmin
-      .from("leads")
-      .select("id")
-      .eq("email", data.email)
-      .eq("form_type", data.form_type)
-      .gte("created_at", dupeSince)
-      .limit(1)
-      .maybeSingle();
-    if (dupe) {
-      return { ok: true as const, id: dupe.id, deduped: true };
-    }
-
     const insert = {
       form_type: data.form_type,
       full_name: data.full_name,

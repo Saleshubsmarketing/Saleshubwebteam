@@ -126,7 +126,7 @@ function ContactPage() {
         </div>
         <div className="space-y-3">
           {[
-            { icon: Mail, t: "Email", v: "hello@novacommerce.io" },
+            { icon: Mail, t: "Email", v: "support@saleshubsweboffice.com" },
             { icon: MessageCircle, t: "WhatsApp", v: "+1 (415) 555-0184" },
             { icon: Calendar, t: "Calendly", v: "Pick a 30-min slot" },
             { icon: MapPin, t: "HQ", v: "Remote · global team" },

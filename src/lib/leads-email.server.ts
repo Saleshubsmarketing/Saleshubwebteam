@@ -87,21 +87,29 @@ function customerHtml(lead: LeadRow) {
 }
 
 async function sendViaResend(payload: {
+  idempotencyKey: string;
   to: string;
   subject: string;
   html: string;
   reply_to?: string;
 }) {
   const key = process.env.RESEND_API_KEY;
+  const lovableKey = process.env.LOVABLE_API_KEY;
   if (!key) {
-    throw new Error("RESEND_API_KEY not set");
+    throw new Error("Resend connection is not available in this deployment");
   }
+  const usesGateway = Boolean(lovableKey);
+  const endpoint = usesGateway
+    ? "https://connector-gateway.lovable.dev/resend/emails"
+    : "https://api.resend.com/emails";
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${lovableKey ?? key}`,
+        ...(usesGateway ? { "X-Connection-Api-Key": key } : {}),
+        "Idempotency-Key": payload.idempotencyKey,
       },
       body: JSON.stringify({
         from: `${FROM_NAME} <${FROM_ADDRESS}>`,
@@ -132,12 +140,14 @@ export async function sendLeadEmails(lead: LeadRow) {
   console.log(`[leads-email] sendLeadEmails executing for lead ${lead.id}`);
   const [admin, customer] = await Promise.all([
     sendViaResend({
+      idempotencyKey: `lead/${lead.id}/admin`,
       to: ADMIN_EMAIL,
       subject: subjectAdmin,
       html: adminHtml(lead),
       reply_to: lead.email,
     }),
     sendViaResend({
+      idempotencyKey: `lead/${lead.id}/customer`,
       to: lead.email,
       subject: "We've Received Your Request – SaleshubsWebOffice",
       html: customerHtml(lead),
