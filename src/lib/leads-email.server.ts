@@ -95,16 +95,20 @@ async function sendViaResend(payload: {
 }) {
   const key = process.env.RESEND_API_KEY;
   const lovableKey = process.env.LOVABLE_API_KEY;
-  if (!key || !lovableKey) {
+  if (!key) {
     throw new Error("Resend connection is not available in this deployment");
   }
+  const usesGateway = Boolean(lovableKey);
+  const endpoint = usesGateway
+    ? "https://connector-gateway.lovable.dev/resend/emails"
+    : "https://api.resend.com/emails";
   try {
-    const res = await fetch("https://connector-gateway.lovable.dev/resend/emails", {
+    const res = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": key,
+        Authorization: `Bearer ${lovableKey ?? key}`,
+        ...(usesGateway ? { "X-Connection-Api-Key": key } : {}),
         "Idempotency-Key": payload.idempotencyKey,
       },
       body: JSON.stringify({
