@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { submitLead } from "@/lib/leads.functions";
+import { submitLead, type LeadInput } from "@/lib/leads.functions";
 
 const ALLOWED_ORIGINS = new Set([
   "https://saleshubsweboffice.com",
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/api/public/leads")({
         }
 
         try {
-          const data = (await request.json()) as Parameters<typeof submitLead>[0]["data"];
+          const data = (await request.json()) as LeadInput;
           const result = await submitLead({ data });
           return new Response(JSON.stringify(result), {
             status: result.ok ? 200 : 400,
