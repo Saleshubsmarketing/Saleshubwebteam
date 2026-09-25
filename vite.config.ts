@@ -14,7 +14,7 @@ const netlifyWorkersShim = fileURLToPath(
 
 export default defineConfig({
   plugins: [mcpPlugin()],
-  ...(isNetlify
+  vite: isNetlify
     ? {
         resolve: {
           alias: {
@@ -23,11 +23,11 @@ export default defineConfig({
         },
         build: {
           rollupOptions: {
-            external: [],
+            external: ["cloudflare:workers"],
           },
         },
       }
-    : {}),
+    : undefined,
   tanstackStart: {
     server: { entry: "server" },
   },
